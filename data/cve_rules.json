@@ -1,0 +1,128 @@
+[
+  {
+    "cve_id": "CVE-2024-36401", "vendor": "OSGeo", "product": "GeoServer",
+    "affected_version_start": null, "affected_version_start_inclusive": true,
+    "affected_version_end": "2.25.1", "affected_version_end_inclusive": true,
+    "fixed_versions": ["2.25.2", "2.24.4", "2.23.6"],
+    "fixed_version_by_branch": {"2.25": "2.25.2", "2.24": "2.24.4", "2.23": "2.23.6"},
+    "required_configuration": "Vulnerable GeoTools XPath/property-name evaluation components present; downstream patches/backports may apply",
+    "required_protocol": "HTTP", "required_endpoint": "/geoserver/(wms|wfs|ows)",
+    "passively_detectable": "partial", "source_priority": "vendor",
+    "vendor_advisory_url": "https://geoserver.org/vulnerability/2024/09/12/cve-2024-36401.html",
+    "notes": "Version range is an appearance test only; patched 2.25.1 installations exist. Branch-specific fixes require backport awareness."
+  },
+  {
+    "cve_id": "CVE-2023-46604", "vendor": "Apache", "product": "Jolokia/ActiveMQ",
+    "affected_version_start": null, "affected_version_start_inclusive": true,
+    "affected_version_end": "5.18.2", "affected_version_end_inclusive": true,
+    "fixed_versions": ["5.15.16", "5.16.7", "5.17.6", "5.18.3", "6.0.0"],
+    "required_configuration": "Reachable Java OpenWire broker/client and exploitable classpath",
+    "required_protocol": "OpenWire", "required_endpoint": null,
+    "passively_detectable": false, "source_priority": "vendor",
+    "vendor_advisory_url": "https://activemq.apache.org/news/cve-2023-46604",
+    "notes": "HTTP Jolokia only fingerprints a related product and cannot establish OpenWire reachability."
+  },
+  {
+    "cve_id": "CVE-2024-3400", "vendor": "Palo Alto Networks", "product": "PAN-OS",
+    "affected_version_start": "10.2.0", "affected_version_start_inclusive": true,
+    "affected_version_end": "11.1.2-h2", "affected_version_end_inclusive": true,
+    "fixed_versions": ["10.2.9-h1", "11.0.4-h1", "11.1.2-h3"],
+    "required_configuration": "GlobalProtect gateway or portal configured",
+    "required_protocol": "HTTP", "required_endpoint": "/global-protect/",
+    "passively_detectable": "partial", "source_priority": "vendor",
+    "vendor_advisory_url": "https://security.paloaltonetworks.com/json/CVE-2024-3400",
+    "range_matching_disabled": true,
+    "notes": "Only PAN-OS 10.2, 11.0 and 11.1 with maintenance/hotfix-specific bounds; generic numeric interval is insufficient, so automatic range promotion is disabled."
+  },
+  {
+    "cve_id": "CVE-2020-11022", "vendor": "OpenJS Foundation", "product": "jQuery",
+    "affected_version_start": "1.2", "affected_version_start_inclusive": true,
+    "affected_version_end": "3.4.1", "affected_version_end_inclusive": true,
+    "fixed_versions": ["3.5.0"], "required_configuration": "Application uses affected DOM-manipulation behavior with untrusted HTML",
+    "required_protocol": "HTTP", "required_endpoint": null, "passively_detectable": "partial",
+    "source_priority": "upstream", "notes": "Presence is not proof the vulnerable function is reachable."
+  },
+  {
+    "cve_id": "CVE-2024-4367", "vendor": "Mozilla", "product": "PDF.js",
+    "affected_version_start": null, "affected_version_start_inclusive": true,
+    "affected_version_end": "4.1.392", "affected_version_end_inclusive": true,
+    "fixed_versions": ["4.2.67"], "required_configuration": "PDF.js renders attacker-controlled PDF with isEvalSupported enabled",
+    "required_protocol": "HTTP", "required_endpoint": null, "passively_detectable": "partial",
+    "source_priority": "upstream", "notes": "Component presence does not prove attacker-controlled document flow."
+  },
+  {
+    "cve_id":"CVE-2024-27198","vendor":"JetBrains","product":"JetBrains TeamCity","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected TeamCity server build","required_protocol":"HTTP","required_endpoint":"/app/rest/","passively_detectable":"partial","notes":"Authoritative build ranges must be imported before version-range promotion." 
+  },
+  {
+    "cve_id":"CVE-2022-1388","vendor":"F5","product":"F5 BIG-IP","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"iControl REST exposed on affected BIG-IP version","required_protocol":"HTTP","required_endpoint":"/mgmt/(tm|shared)/","passively_detectable":"partial","notes":"Endpoint is not proof of vulnerable configuration or version."
+  },
+  {
+    "cve_id":"CVE-2023-22527","vendor":"Atlassian","product":"Atlassian Confluence","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected Confluence Data Center/Server version","required_protocol":"HTTP","required_endpoint":"setupadministrator|/template/custom/","passively_detectable":"partial","notes":"Path is only a product/endpoint hint."
+  },
+  {
+    "cve_id":"CVE-2020-14882","vendor":"Oracle","product":"Oracle WebLogic","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected WebLogic console version reachable","required_protocol":"HTTP","required_endpoint":"/console/|/wls-wsat/","passively_detectable":"partial","notes":"Console presence alone is insufficient."
+  },
+  {
+    "cve_id":"CVE-2019-17558","vendor":"Apache","product":"Apache Solr","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"VelocityResponseWriter configured and parameters/resource loading permitted","required_protocol":"HTTP","required_endpoint":"/solr/","passively_detectable":"partial","notes":"Solr endpoint alone is insufficient."
+  },
+  {
+    "cve_id":"CVE-2017-9841","vendor":"Sebastian Bergmann","product":"PHPUnit","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Vulnerable PHPUnit utility deployed under web root","required_protocol":"HTTP","required_endpoint":"eval-stdin\\.php$","passively_detectable":"partial","notes":"Archived error/body markers are required for product confirmation."
+  },
+  {
+    "cve_id":"CVE-2021-3129","vendor":"Facade Ignition","product":"Laravel Ignition","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected Ignition version with debug mode enabled","required_protocol":"HTTP","required_endpoint":"/_ignition/","passively_detectable":"partial","notes":"Health-check path does not establish debug configuration."
+  },
+  {
+    "cve_id":"CVE-2021-21972","vendor":"VMware","product":"VMware vCenter","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected vCenter Server with vROps plugin","required_protocol":"HTTP","required_endpoint":"vropspluginui","passively_detectable":"partial","notes":"Plugin endpoint and version evidence are required."
+  },
+  {
+    "cve_id":"CVE-2024-21762","vendor":"Fortinet","product":"Fortinet FortiOS","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"SSL VPN enabled on an affected FortiOS version","required_protocol":"HTTP","required_endpoint":"/remote/fgt_lang|/sslvpn","passively_detectable":"partial","notes":"SSL-VPN page is only configuration/product evidence."
+  },
+  {
+    "cve_id":"CVE-2022-46169","vendor":"Cacti","product":"Cacti","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected Cacti version and vulnerable remote_agent authorization path","required_protocol":"HTTP","required_endpoint":"/cacti/","passively_detectable":"partial","notes":"Login/index path is not CVE proof."
+  },
+  {
+    "cve_id":"CVE-2023-26360","vendor":"Adobe","product":"Adobe ColdFusion","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected ColdFusion update level","required_protocol":"HTTP","required_endpoint":"/cfide/","passively_detectable":"partial","notes":"CFIDE path is product evidence only."
+  },
+  {
+    "cve_id":"CVE-2024-45519","vendor":"Synacor","product":"Zimbra Collaboration","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected postjournal service enabled","required_protocol":"SMTP","required_endpoint":null,"passively_detectable":false,"notes":"Zimbra SOAP URLs cannot observe the vulnerable postjournal protocol path."
+  },
+  {
+    "cve_id":"CVE-2023-0669","vendor":"Fortra","product":"GoAnywhere MFT","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected administrative console version","required_protocol":"HTTP","required_endpoint":"/goanywhere/","passively_detectable":"partial","notes":"Admin path alone is insufficient."
+  },
+  {
+    "cve_id":"CVE-2023-34362","vendor":"Progress","product":"MOVEit Transfer","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected MOVEit Transfer version","required_protocol":"HTTP","required_endpoint":"moveitisapi|/machine\\.aspx","passively_detectable":"partial","notes":"Endpoint presence is not SQL injection evidence."
+  },
+  {
+    "cve_id":"CVE-2025-31161","vendor":"CrushFTP","product":"CrushFTP","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected CrushFTP version","required_protocol":"HTTP","required_endpoint":"/webinterface/","passively_detectable":"partial","notes":"Version data must come from an authoritative rule update."
+  },
+  {
+    "cve_id":"CVE-2023-35082","vendor":"Ivanti","product":"Ivanti EPMM","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected EPMM version with API reachable","required_protocol":"HTTP","required_endpoint":"/mifs/|/rs/api/v2/","passively_detectable":"partial","notes":"API path is product evidence only."
+  },
+  {
+    "cve_id":"CVE-2023-28432","vendor":"MinIO","product":"MinIO","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected distributed MinIO deployment exposing bootstrap response","required_protocol":"HTTP","required_endpoint":"/minio/bootstrap/v1/verify","passively_detectable":"partial","notes":"Only archived response content can establish information disclosure."
+  },
+  {
+    "cve_id":"CVE-2022-24112","vendor":"Apache","product":"Apache APISIX","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected APISIX Admin API with default/weak access configuration","required_protocol":"HTTP","required_endpoint":"/apisix/","passively_detectable":"partial","notes":"Admin route alone is insufficient."
+  },
+  {
+    "cve_id":"CVE-2021-25646","vendor":"Apache","product":"Apache Druid","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected Druid version accepting JavaScript-enabled task specifications","required_protocol":"HTTP","required_endpoint":"/druid/","passively_detectable":"partial","notes":"Coordinator/indexer path is product evidence only."
+  },
+  {
+    "cve_id":"CVE-2021-36260","vendor":"Hikvision","product":"Hikvision IP Camera","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected camera firmware","required_protocol":"HTTP","required_endpoint":"/sdk/weblanguage","passively_detectable":"partial","notes":"Endpoint and passive firmware evidence are required."
+  },
+  {
+    "cve_id":"CVE-2025-3248","vendor":"Langflow","product":"Langflow","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected Langflow version exposing validate/code endpoint","required_protocol":"HTTP","required_endpoint":"/api/v1/validate/code","passively_detectable":"partial","notes":"HTTP 405 preserves endpoint evidence but is not vulnerability proof."
+  },
+  {
+    "cve_id":"CVE-2023-32315","vendor":"Ignite Realtime","product":"Openfire","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected Openfire setup environment","required_protocol":"HTTP","required_endpoint":"/setup/setup-[^/]*\\.jsp$","passively_detectable":"partial","notes":"The old rule was effectively unreachable through its prefilter; it is now a product candidate only until response/version evidence exists."
+  },
+  {
+    "cve_id":"CVE-2023-4966","vendor":"Citrix","product":"Citrix NetScaler Gateway","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected NetScaler ADC/Gateway version with relevant gateway configuration","required_protocol":"HTTP","required_endpoint":"/oauth/idp/|/logon/logonpoint/","passively_detectable":"partial","notes":"Gateway discovery does not demonstrate sensitive-memory disclosure."
+  },
+  {
+    "cve_id":"CVE-2023-46805","vendor":"Ivanti","product":"Ivanti Connect Secure","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected Connect Secure version","required_protocol":"HTTP","required_endpoint":"/api/v1/","passively_detectable":"partial","notes":"API paths are product hints, not authentication-bypass proof."
+  },
+  {
+    "cve_id":"CVE-2024-21887","vendor":"Ivanti","product":"Ivanti Connect Secure","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected Connect Secure version and command-injection path","required_protocol":"HTTP","required_endpoint":"/api/v1/","passively_detectable":"partial","notes":"API paths are product hints, not command-injection proof."
+  }
+]

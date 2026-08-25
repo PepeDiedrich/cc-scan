@@ -4,7 +4,8 @@
 # Startet die komplette Pipeline:
 #   1. Python-Venv pruefen/erstellen + duckdb installieren
 #   2. Neuester Common-Crawl-Index wird automatisch ermittelt
-#   3. Vulnerability-Scan via DuckDB
+#   3. High-Recall URL-Prefilter via DuckDB
+#   4. Passive WARC-Response-Analyse (standardmaessig max. 5000 Records)
 #
 # Nutzung:
 #   ./start.sh                 # Testlauf (5 Shards des neuesten Crawls)
@@ -33,14 +34,14 @@ if [ ! -d "$VENV_DIR" ]; then
 fi
 
 # 3. Abhaengigkeiten installieren/aktualisieren
-if ! "$VENV_DIR/bin/python" -c "import duckdb" &>/dev/null; then
-    echo "[*] Installiere duckdb ..."
+if ! "$VENV_DIR/bin/python" -c "import duckdb, brotli" &>/dev/null; then
+    echo "[*] Installiere Abhaengigkeiten ..."
     "$VENV_DIR/bin/pip" install -q --upgrade pip
-    "$VENV_DIR/bin/pip" install -q duckdb
+    "$VENV_DIR/bin/pip" install -q -r requirements.txt
 fi
 
 echo "[+] duckdb Version: $("$VENV_DIR/bin/python" -c 'import duckdb; print(duckdb.__version__)')"
 echo "=== Starte Pipeline ==="
 
-# 4. Pipeline starten (alle Argumente durchreichen)
+# Pipeline starten (alle Argumente durchreichen; PASSIVE_ONLY=true)
 exec "$VENV_DIR/bin/python" pipeline_runner.py "$@"

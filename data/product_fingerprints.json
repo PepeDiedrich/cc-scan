@@ -1,0 +1,61 @@
+{
+  "GeoServer": {
+    "markers": [
+      {"source": "title", "pattern": "\\bGeoServer\\b", "weight": 0.55},
+      {"source": "body", "pattern": "(?:GeoServer|http://www\\.geoserver\\.org|WMS_Capabilities)", "weight": 0.45},
+      {"source": "header", "pattern": "geoserver", "weight": 0.45}
+    ]
+  },
+  "PAN-OS": {"markers": [
+    {"source": "body", "pattern": "(?:GlobalProtect|PAN-OS|Palo Alto Networks)", "weight": 0.65},
+    {"source": "title", "pattern": "GlobalProtect", "weight": 0.6}
+  ]},
+  "JetBrains TeamCity": {"markers": [
+    {"source": "body", "pattern": "(?:TeamCity|teamcity-server)", "weight": 0.65},
+    {"source": "header", "pattern": "TeamCity", "weight": 0.55}
+  ]},
+  "Jolokia/ActiveMQ": {"markers": [
+    {"source": "body", "pattern": "(?:Jolokia|ActiveMQ)", "weight": 0.6},
+    {"source": "header", "pattern": "(?:Jolokia|ActiveMQ)", "weight": 0.55}
+  ]},
+  "Apache Tomcat": {"markers": [
+    {"source": "header", "pattern": "Apache-Coyote|Tomcat", "weight": 0.65},
+    {"source": "body", "pattern": "Apache Tomcat", "weight": 0.65}
+  ]},
+  "Grafana": {"markers": [
+    {"source": "body", "pattern": "(?:Grafana|grafanaBootData)", "weight": 0.65},
+    {"source": "title", "pattern": "Grafana", "weight": 0.55}
+  ]},
+  "Langflow": {"markers": [
+    {"source": "body", "pattern": "(?:Langflow|langflow)", "weight": 0.65},
+    {"source": "title", "pattern": "Langflow", "weight": 0.55}
+  ]},
+  "jQuery": {"markers": [
+    {"source": "body", "pattern": "jQuery(?: JavaScript Library)?(?: v?\\d+\\.\\d+)?", "weight": 0.7}
+  ]},
+  "PDF.js": {"markers": [
+    {"source": "body", "pattern": "PDFJS|pdfjsVersion|pdf\\.js", "weight": 0.6}
+  ]},
+  "F5 BIG-IP": {"markers": [{"source":"body","pattern":"BIG-IP|F5 Networks","weight":0.65}]},
+  "Atlassian Confluence": {"markers": [{"source":"body","pattern":"Atlassian Confluence|ajs-version-number","weight":0.65}]},
+  "Oracle WebLogic": {"markers": [{"source":"body","pattern":"Oracle WebLogic|WebLogic Server","weight":0.65}]},
+  "Apache Solr": {"markers": [{"source":"body","pattern":"Apache Solr|solr-spec-version","weight":0.65}]},
+  "PHPUnit": {"markers": [{"source":"body","pattern":"PHPUnit|eval-stdin","weight":0.6}]},
+  "Laravel Ignition": {"markers": [{"source":"body","pattern":"facade/ignition|Laravel Ignition","weight":0.65}]},
+  "VMware vCenter": {"markers": [{"source":"body","pattern":"VMware vSphere|vCenter Server","weight":0.65}]},
+  "Fortinet FortiOS": {"markers": [{"source":"body","pattern":"FortiGate|FortiOS|Fortinet","weight":0.65}]},
+  "Cacti": {"markers": [{"source":"body","pattern":"The Cacti Group|Cacti Login","weight":0.65}]},
+  "Adobe ColdFusion": {"markers": [{"source":"body","pattern":"Adobe ColdFusion|ColdFusion Administrator","weight":0.65}]},
+  "Zimbra Collaboration": {"markers": [{"source":"body","pattern":"Zimbra Collaboration|Zimbra Web Client","weight":0.65}]},
+  "GoAnywhere MFT": {"markers": [{"source":"body","pattern":"GoAnywhere MFT|GoAnywhere Web Client","weight":0.65}]},
+  "MOVEit Transfer": {"markers": [{"source":"body","pattern":"MOVEit Transfer|MOVEit DMZ","weight":0.65}]},
+  "CrushFTP": {"markers": [{"source":"body","pattern":"CrushFTP","weight":0.65}]},
+  "Ivanti EPMM": {"markers": [{"source":"body","pattern":"Ivanti EPMM|MobileIron","weight":0.65}]},
+  "MinIO": {"markers": [{"source":"body","pattern":"MinIO(?: Console| Server)?","weight":0.65}]},
+  "Apache APISIX": {"markers": [{"source":"body","pattern":"Apache APISIX|APISIX Dashboard","weight":0.65}]},
+  "Apache Druid": {"markers": [{"source":"body","pattern":"Apache Druid|Druid Console","weight":0.65}]},
+  "Hikvision IP Camera": {"markers": [{"source":"body","pattern":"HIKVISION|WebComponents Hikvision","weight":0.65}]},
+  "Openfire": {"markers": [{"source":"body","pattern":"Openfire(?: Admin Console)?|Jive Software","weight":0.65}]},
+  "Ivanti Connect Secure": {"markers": [{"source":"body","pattern":"Ivanti Connect Secure|Pulse Connect Secure","weight":0.65}]},
+  "Citrix NetScaler Gateway": {"markers": [{"source":"body","pattern":"Citrix Gateway|NetScaler Gateway|LogonPoint","weight":0.65}]}
+}
