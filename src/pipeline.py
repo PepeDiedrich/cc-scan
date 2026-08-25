@@ -18,7 +18,9 @@ from .warc_fetcher import WarcFetcher
 
 
 SAFE_HEADERS = ("server", "x-powered-by", "via", "location", "www-authenticate",
-                "content-type", "content-length", "x-grafana-version", "x-jenkins")
+                "content-type", "content-length", "x-grafana-version", "x-jenkins",
+                "x-teamcity-node-id", "x-gitlab-meta", "x-elastic-product", "x-owa-version",
+                "x-feserver", "x-calculatedbetarget", "microsoftsharepointteamservices")
 PUBLIC_CODE_HOST = re.compile(
     r"(?:github(?:usercontent)?\.com|gitlab\.com|bitbucket\.org|googlesource\.com|"
     r"sourceforge\.net|gitee\.com|codeberg\.org)$", re.I)
@@ -111,6 +113,9 @@ def analyze_record(row: dict[str, Any], response: ParsedResponse,
             "version_confidence": version.version_confidence if version else None,
             "cve_id": cve.get("cve_id") if cve else None,
             "cve_match_confidence": cve_conf,
+            "cve_cvss_score": cve.get("cvss_score") if cve else None,
+            "cve_severity": cve.get("severity") if cve else None,
+            "cve_advisory_url": cve.get("vendor_advisory_url") if cve else None,
             "required_protocol": (cve or related_rule or {}).get("required_protocol"),
             "required_configuration": (cve or related_rule or {}).get("required_configuration"),
             "configuration_confidence": config_confidence,
@@ -150,6 +155,7 @@ def fallback_result(row: dict[str, Any], reason: str) -> dict[str, Any]:
         "content_languages": row.get("content_languages"), "product": product,
         "product_confidence": product_confidence, "detected_version": None, "version_source": None,
         "version_confidence": None, "cve_id": None, "cve_match_confidence": None,
+        "cve_cvss_score": None, "cve_severity": None, "cve_advisory_url": None,
         "required_protocol": None, "required_configuration": None, "configuration_confidence": None,
         "vulnerability_category": row.get("observed_signal", "PRODUCT_ENDPOINT_OBSERVED"),
         "evidence_state": "PRODUCT_DETECTED", "overall_confidence": overall_confidence(

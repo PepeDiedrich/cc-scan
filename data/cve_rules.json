@@ -124,5 +124,342 @@
   },
   {
     "cve_id":"CVE-2024-21887","vendor":"Ivanti","product":"Ivanti Connect Secure","affected_version_start":null,"affected_version_start_inclusive":true,"affected_version_end":null,"affected_version_end_inclusive":true,"fixed_versions":[],"required_configuration":"Affected Connect Secure version and command-injection path","required_protocol":"HTTP","required_endpoint":"/api/v1/","passively_detectable":"partial","notes":"API paths are product hints, not command-injection proof."
+  },
+  {
+    "cve_id":"CVE-2024-23897","vendor":"Jenkins Project","product":"Jenkins",
+    "affected_ranges":[{"start":null,"end":"2.426.2","end_inclusive":true},{"start":"2.427","end":"2.441","end_inclusive":true}],
+    "fixed_versions":["2.442","2.426.3","2.440.1"],"required_configuration":"Jenkins CLI enabled; anonymous impact depends on permissions and CLI commands",
+    "required_protocol":"HTTP","required_endpoint":null,"passively_detectable":"partial","cvss_score":9.8,"severity":"critical",
+    "vendor_advisory_url":"https://www.jenkins.io/security/advisory/2024-01-24/#SECURITY-3314","notes":"Jenkins and version can be observed; CLI enablement and readable file impact cannot be confirmed passively."
+  },
+  {
+    "cve_id":"CVE-2023-7028","vendor":"GitLab","product":"GitLab",
+    "affected_ranges":[{"start":"16.1","end":"16.1.6","end_inclusive":false},{"start":"16.2","end":"16.2.9","end_inclusive":false},{"start":"16.3","end":"16.3.7","end_inclusive":false},{"start":"16.4","end":"16.4.5","end_inclusive":false},{"start":"16.5","end":"16.5.6","end_inclusive":false},{"start":"16.6","end":"16.6.4","end_inclusive":false},{"start":"16.7","end":"16.7.2","end_inclusive":false}],
+    "fixed_versions":["16.1.6","16.2.9","16.3.7","16.4.5","16.5.6","16.6.4","16.7.2"],"required_configuration":"GitLab CE/EE with password reset enabled",
+    "required_protocol":"HTTP","required_endpoint":null,"passively_detectable":"partial","cvss_score":10.0,"severity":"critical",
+    "vendor_advisory_url":"https://gitlab.com/gitlab-org/gitlab/-/issues/436084","notes":"A login or API response identifies GitLab; password-reset exploitability is not observed."
+  },
+  {
+    "cve_id":"CVE-2022-26134","vendor":"Atlassian","product":"Atlassian Confluence",
+    "affected_ranges":[{"start":"1.3.0","end":"7.4.17","end_inclusive":false},{"start":"7.5.0","end":"7.13.7","end_inclusive":false},{"start":"7.14.0","end":"7.14.3","end_inclusive":false},{"start":"7.15.0","end":"7.15.2","end_inclusive":false},{"start":"7.16.0","end":"7.16.4","end_inclusive":false},{"start":"7.17.0","end":"7.17.4","end_inclusive":false},{"start":"7.18.0","end":"7.18.1","end_inclusive":false}],
+    "fixed_versions":["7.4.17","7.13.7","7.14.3","7.15.2","7.16.4","7.17.4","7.18.1"],"required_configuration":"Affected Confluence Server or Data Center version",
+    "required_protocol":"HTTP","required_endpoint":null,"passively_detectable":"partial","severity":"critical",
+    "vendor_advisory_url":"https://confluence.atlassian.com/doc/confluence-security-advisory-2022-06-02-1130377146.html","notes":"Product/version evidence is passive; no OGNL payload is sent."
+  },
+  {
+    "cve_id":"CVE-2023-42793","vendor":"JetBrains","product":"JetBrains TeamCity",
+    "affected_ranges":[{"start":null,"end":"2023.05.4","end_inclusive":false}],"fixed_versions":["2023.05.4"],
+    "required_configuration":"TeamCity On-Premises server; TeamCity Cloud is not affected","required_protocol":"HTTP","required_endpoint":null,
+    "passively_detectable":"partial","cvss_score":9.8,"severity":"critical","vendor_advisory_url":"https://blog.jetbrains.com/teamcity/2023/09/critical-security-issue-affecting-teamcity-on-premises-update-to-2023-05-4-now/",
+    "notes":"A passive response cannot distinguish a vendor-patched old build from an unpatched server."
+  },
+  {
+    "cve_id":"CVE-2024-4577","vendor":"PHP Group","product":"PHP",
+    "affected_ranges":[{"start":"8.1.0","end":"8.1.29","end_inclusive":false},{"start":"8.2.0","end":"8.2.20","end_inclusive":false},{"start":"8.3.0","end":"8.3.8","end_inclusive":false}],
+    "fixed_versions":["8.1.29","8.2.20","8.3.8"],"required_configuration":"PHP-CGI on Windows with an affected code page and Apache CGI mapping",
+    "required_protocol":"HTTP","required_endpoint":"/php-cgi/|/cgi-bin/php(?:\\.exe)?","passively_detectable":"partial","cvss_score":9.8,"severity":"critical",
+    "vendor_advisory_url":"https://github.com/php/php-src/security/advisories/GHSA-3qgc-jrrr-25jv","notes":"PHP version and an explicit CGI path are hints; Windows/code-page configuration is not visible."
+  },
+  {
+    "cve_id":"CVE-2022-22965","vendor":"Spring by VMware","product":"Spring Framework",
+    "affected_ranges":[{"start":"5.2.0","end":"5.2.20","end_inclusive":false},{"start":"5.3.0","end":"5.3.18","end_inclusive":false}],
+    "fixed_versions":["5.2.20","5.3.18"],"required_configuration":"JDK 9+, Spring MVC/WebFlux, data binding, and typically a WAR deployment on Tomcat",
+    "required_protocol":"HTTP","required_endpoint":null,"passively_detectable":"partial","severity":"critical",
+    "vendor_advisory_url":"https://spring.io/security/cve-2022-22965","notes":"A Spring response cannot establish JDK, WAR deployment, data-binding route, or patch status."
+  },
+  {
+    "cve_id":"CVE-2020-5405","vendor":"Spring by VMware","product":"Spring Cloud Config",
+    "affected_ranges":[{"start":null,"end":"2.1.7","end_inclusive":false},{"start":"2.2.0","end":"2.2.2","end_inclusive":false}],
+    "fixed_versions":["2.1.7","2.2.2"],"required_configuration":"spring-cloud-config-server module serving an affected repository backend",
+    "required_protocol":"HTTP","required_endpoint":null,"passively_detectable":"partial","severity":"high",
+    "vendor_advisory_url":"https://spring.io/security/cve-2020-5405","notes":"Only product/version and normal configuration responses are inspected; no traversal request is generated."
+  },
+  {
+    "cve_id":"CVE-2019-3799","vendor":"Spring by VMware","product":"Spring Cloud Config",
+    "affected_ranges":[{"start":"1.4.0","end":"1.4.6","end_inclusive":false},{"start":"2.0.0","end":"2.0.4","end_inclusive":false},{"start":"2.1.0","end":"2.1.2","end_inclusive":false}],
+    "fixed_versions":["1.4.6","2.0.4","2.1.2"],"required_configuration":"spring-cloud-config-server module serving an affected repository backend",
+    "required_protocol":"HTTP","required_endpoint":null,"passively_detectable":"partial","severity":"high",
+    "vendor_advisory_url":"https://spring.io/security/cve-2019-3799","notes":"Only passive product/version evidence is collected."
+  },
+  {
+    "cve_id":"CVE-2024-38856","vendor":"Apache","product":"Apache OFBiz",
+    "affected_ranges":[{"start":null,"end":"18.12.14","end_inclusive":true}],"fixed_versions":["18.12.15"],
+    "required_configuration":"Unauthenticated screen endpoint whose screen definition relies on endpoint authorization",
+    "required_protocol":"HTTP","required_endpoint":null,"passively_detectable":"partial","severity":"critical",
+    "vendor_advisory_url":"https://ofbiz.apache.org/security.html","notes":"OFBiz presence is not proof that a vulnerable screen is configured."
+  },
+  {
+    "cve_id":"CVE-2023-31418","vendor":"Elastic","product":"Elasticsearch",
+    "affected_ranges":[{"start":"7.17.12","end":"7.17.12","end_inclusive":true},{"start":"8.0.0","end":"8.8.2","end_inclusive":false}],
+    "fixed_versions":["7.17.13","8.8.2"],"required_configuration":"Unauthenticated HTTP layer reachable on an affected Elasticsearch node",
+    "required_protocol":"HTTP","required_endpoint":null,"passively_detectable":"partial","cvss_score":7.5,"severity":"high",
+    "vendor_advisory_url":"https://discuss.elastic.co/t/elasticsearch-8-9-0-7-17-13-security-update/343616","notes":"Corrected mapping: this CVE is Elasticsearch uncontrolled resource consumption, not Nacos."
+  },
+  {
+    "cve_id":"CVE-2021-29441","vendor":"Alibaba","product":"Nacos",
+    "affected_ranges":[{"start":null,"end":"1.4.1","end_inclusive":false}],"fixed_versions":["1.4.1"],
+    "required_configuration":"Authentication enabled on Nacos before 1.4.1","required_protocol":"HTTP","required_endpoint":"/nacos/",
+    "passively_detectable":"partial","cvss_score":8.6,"severity":"high","vendor_advisory_url":"https://github.com/alibaba/nacos/security/advisories/GHSA-36hp-jr8h-556f",
+    "notes":"The authentication setting and spoofable User-Agent bypass are not tested."
+  },
+  {
+    "cve_id":"CVE-2021-43798","vendor":"Grafana Labs","product":"Grafana",
+    "affected_ranges":[{"start":"8.0.0-beta1","end":"8.0.7","end_inclusive":false},{"start":"8.1.0","end":"8.1.8","end_inclusive":false},{"start":"8.2.0","end":"8.2.7","end_inclusive":false},{"start":"8.3.0","end":"8.3.1","end_inclusive":false}],
+    "fixed_versions":["8.0.7","8.1.8","8.2.7","8.3.1"],"required_configuration":"Self-hosted Grafana with an installed plugin; Grafana Cloud was not affected",
+    "required_protocol":"HTTP","required_endpoint":"/grafana|/public/plugins/","passively_detectable":"partial","cvss_score":7.5,"severity":"high",
+    "vendor_advisory_url":"https://github.com/grafana/grafana/security/advisories/GHSA-8pjx-jj86-j47p","notes":"Archived normal plugin paths are evidence; no traversal path is requested."
+  },
+  {
+    "cve_id":"CVE-2021-27905","vendor":"Apache","product":"Apache Solr",
+    "affected_ranges":[{"start":null,"end":"8.8.2","end_inclusive":false}],"fixed_versions":["8.8.2"],
+    "required_configuration":"ReplicationHandler registered and reachable for a Solr core","required_protocol":"HTTP","required_endpoint":"/solr/",
+    "passively_detectable":"partial","severity":"high","vendor_advisory_url":"https://lists.apache.org/thread/r0ddc3a82bd7523b1453cb7a5e09eb5559517145425074a42eb326b10",
+    "notes":"Solr/version evidence cannot prove ReplicationHandler configuration."
+  },
+  {
+    "cve_id":"CVE-2024-24919","vendor":"Check Point","product":"Check Point Quantum Gateway",
+    "affected_ranges":[],"fixed_versions":[],"range_matching_disabled":true,
+    "required_configuration":"Internet-connected Security Gateway with Remote Access VPN or Mobile Access enabled and an affected hotfix level",
+    "required_protocol":"HTTP","required_endpoint":"/clients/mycrl|/mobileaccess/","passively_detectable":"partial","cvss_score":8.6,"severity":"high",
+    "vendor_advisory_url":"https://support.checkpoint.com/results/sk/sk182336","notes":"Release/hotfix matrices cannot be represented as a simple version interval; endpoint evidence remains a candidate only."
+  },
+  {
+    "cve_id":"CVE-2023-27997","vendor":"Fortinet","product":"Fortinet FortiOS",
+    "affected_ranges":[{"start":"6.0.0","end":"6.0.16","end_inclusive":true},{"start":"6.2.0","end":"6.2.13","end_inclusive":true},{"start":"6.4.0","end":"6.4.12","end_inclusive":true},{"start":"7.0.0","end":"7.0.11","end_inclusive":true},{"start":"7.2.0","end":"7.2.4","end_inclusive":true}],
+    "fixed_versions":["6.0.17","6.2.14","6.4.13","7.0.12","7.2.5"],"required_configuration":"SSL-VPN enabled on an affected FortiOS release",
+    "required_protocol":"HTTP","required_endpoint":"/remote/fgt_lang|/sslvpn","passively_detectable":"partial","cvss_score":9.2,"severity":"critical",
+    "vendor_advisory_url":"https://fortiguard.com/psirt/FG-IR-23-097","notes":"SSL-VPN presence and version do not demonstrate the heap overflow."
+  },
+  {
+    "cve_id":"CVE-2023-38035","vendor":"Ivanti","product":"Ivanti Sentry",
+    "affected_ranges":[{"start":null,"end":"9.18.0","end_inclusive":true}],"fixed_versions":[],
+    "required_configuration":"MICS Admin Portal reachable on MobileIron Sentry 9.18.0 or earlier","required_protocol":"HTTP","required_endpoint":"/mics/|/sentry/admin",
+    "passively_detectable":"partial","severity":"critical","vendor_advisory_url":"https://forums.ivanti.com/s/article/CVE-2023-38035-API-Authentication-Bypass-on-Sentry-Administrator-Interface",
+    "notes":"Corrected product distinction: Sentry/MICS is not EPMM. No authentication bypass request is sent."
+  },
+  {
+    "cve_id":"CVE-2024-27956","vendor":"ValvePress","product":"WordPress Automatic",
+    "affected_ranges":[{"start":null,"end":"3.92.0","end_inclusive":true}],"fixed_versions":[],
+    "required_configuration":"WP Automatic plugin installed and enabled at an affected version","required_protocol":"HTTP","required_endpoint":"/wp-content/plugins/wp-automatic/",
+    "passively_detectable":"partial","cvss_score":9.9,"severity":"critical","vendor_advisory_url":"https://patchstack.com/database/vulnerability/wp-automatic/wordpress-automatic-plugin-3-92-0-unauthenticated-arbitrary-sql-execution-vulnerability",
+    "notes":"Static plugin assets may reveal presence/version; SQL injection is not tested."
+  },
+  {
+    "cve_id":"CVE-2024-27954","vendor":"ValvePress","product":"WordPress Automatic",
+    "affected_ranges":[{"start":null,"end":"3.92.0","end_inclusive":true}],"fixed_versions":[],
+    "required_configuration":"WP Automatic plugin installed and enabled at an affected version","required_protocol":"HTTP","required_endpoint":"/wp-content/plugins/wp-automatic/",
+    "passively_detectable":"partial","cvss_score":9.3,"severity":"critical","vendor_advisory_url":"https://patchstack.com/database/vulnerability/wp-automatic/wordpress-automatic-plugin-3-92-0-unauthenticated-arbitrary-file-download-and-ssrf-vulnerability",
+    "notes":"Corrected mapping: this is WP Automatic path traversal/SSRF, not Backup Migration RCE."
+  },
+  {
+    "cve_id":"CVE-2023-38000","vendor":"WordPress.org","product":"WordPress",
+    "affected_ranges":[{"start":"5.9","end":"5.9.7","end_inclusive":true},{"start":"6.0","end":"6.0.5","end_inclusive":true},{"start":"6.1","end":"6.1.3","end_inclusive":true},{"start":"6.2","end":"6.2.2","end_inclusive":true},{"start":"6.3","end":"6.3.1","end_inclusive":true}],
+    "fixed_versions":["5.9.8","6.0.6","6.1.4","6.2.3","6.3.2"],"required_configuration":"Contributor-capable user and vulnerable Navigation Links block handling",
+    "required_protocol":"HTTP","required_endpoint":null,"passively_detectable":"partial","cvss_score":6.5,"severity":"medium",
+    "vendor_advisory_url":"https://patchstack.com/articles/wordpress-core-6-3-2-security-update-technical-advisory","notes":"Corrected mapping and severity: WordPress Core stored XSS, not Elementor Pro RCE."
+  },
+  {
+    "cve_id":"CVE-2023-38000","vendor":"Gutenberg Team","product":"Gutenberg",
+    "affected_ranges":[{"start":null,"end":"16.8.0","end_inclusive":true}],"fixed_versions":[],
+    "required_configuration":"Gutenberg plugin installed and contributor-capable user","required_protocol":"HTTP","required_endpoint":"/wp-content/plugins/gutenberg/",
+    "passively_detectable":"partial","cvss_score":6.5,"severity":"medium","vendor_advisory_url":"https://patchstack.com/database/vulnerability/gutenberg/wordpress-gutenberg-plugin-16-8-0-contributor-stored-xss-in-navigation-links-block-vulnerability",
+    "notes":"Plugin asset presence does not demonstrate the stored-XSS precondition."
+  },
+  {
+    "cve_id":"CVE-2023-43660","vendor":"warp-tech","product":"Warpgate",
+    "affected_ranges":[{"start":null,"end":"0.8.1","end_inclusive":false}],"fixed_versions":["0.8.1"],
+    "required_configuration":"SSH public-key-only authentication plus knowledge of username, target, and public key",
+    "required_protocol":"SSH","required_endpoint":null,"passively_detectable":false,"cvss_score":4.8,"severity":"medium",
+    "vendor_advisory_url":"https://github.com/warp-tech/warpgate/security/advisories/GHSA-3cjp-w4cp-m9c8","notes":"Corrected mapping: this is an SSH issue in Warpgate, not Roundcube and not passively observable in Common Crawl."
+  },
+  {
+    "cve_id":"CVE-2023-5631","vendor":"Roundcube","product":"Roundcube Webmail",
+    "affected_ranges":[{"start":null,"end":"1.4.15","end_inclusive":false},{"start":"1.5.0","end":"1.5.5","end_inclusive":false},{"start":"1.6.0","end":"1.6.4","end_inclusive":false}],
+    "fixed_versions":["1.4.15","1.5.5","1.6.4"],"required_configuration":"Affected Roundcube rendering a crafted HTML email for a user",
+    "required_protocol":"HTTP","required_endpoint":"/roundcube/|/webmail/|/roundcubemail/","passively_detectable":"partial","cvss_score":6.1,"severity":"medium",
+    "vendor_advisory_url":"https://github.com/roundcube/roundcubemail/releases/tag/1.6.4","notes":"Corrected severity: product/version presence does not establish delivery or viewing of a crafted message."
+  },
+  {
+    "cve_id":"CVE-2023-29489","vendor":"cPanel","product":"cPanel",
+    "affected_ranges":[],"fixed_versions":["11.109.9999.116","11.108.0.13","11.106.0.18","11.102.0.31"],"range_matching_disabled":true,
+    "required_configuration":"Affected cpsrvd branch and invalid webcall error route","required_protocol":"HTTP","required_endpoint":"/cgi-sys/|/cpsess[0-9]+/|/webcall/",
+    "passively_detectable":"partial","cvss_score":5.3,"severity":"medium","vendor_advisory_url":"https://forums.cpanel.net/threads/cpanel-tsr-2023-0001-full-disclosure.708949/",
+    "notes":"Corrected severity and branch-specific fixes; generic numeric promotion is disabled."
+  },
+  {
+    "cve_id":"CVE-2024-37085","vendor":"VMware","product":"VMware ESXi",
+    "affected_ranges":[],"fixed_versions":[],"range_matching_disabled":true,
+    "required_configuration":"ESXi joined to Active Directory and attacker able to recreate the configured AD admin group",
+    "required_protocol":"Active Directory","required_endpoint":null,"passively_detectable":false,"cvss_score":6.8,"severity":"medium",
+    "vendor_advisory_url":"https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/24505",
+    "notes":"The ESXi web UI/build is unrelated to the required Active Directory state; Common Crawl cannot assess this CVE."
+  },
+  {
+    "cve_id":"CVE-2023-40044","vendor":"Progress","product":"WS_FTP Server",
+    "affected_ranges":[{"start":"8.7.0","end":"8.7.4","end_inclusive":false},{"start":"8.8.0","end":"8.8.2","end_inclusive":false}],
+    "fixed_versions":["8.7.4","8.8.2"],"required_configuration":"WS_FTP Ad Hoc Transfer module installed and reachable",
+    "required_protocol":"HTTP","required_endpoint":"/thinclient/|/aht/|athenticate\\.asp","passively_detectable":"partial","cvss_score":10.0,"severity":"critical",
+    "vendor_advisory_url":"https://community.progress.com/s/article/WS-FTP-Server-Critical-Vulnerability-September-2023","notes":"Login/banner evidence cannot prove the optional Ad Hoc Transfer module is vulnerable."
+  },
+  {
+    "cve_id":"CVE-2022-22954","vendor":"VMware","product":"VMware Workspace ONE Access",
+    "affected_ranges":[{"start":"20.10.0.0","end":"20.10.0.1","end_inclusive":true},{"start":"21.08.0.0","end":"21.08.0.1","end_inclusive":true},{"start":"3.3.3","end":"3.3.6","end_inclusive":true}],
+    "fixed_versions":[],"required_configuration":"Affected Workspace ONE Access or Identity Manager appliance",
+    "required_protocol":"HTTP","required_endpoint":"/catalog-portal/|/saas/auth/","passively_detectable":"partial","severity":"critical",
+    "vendor_advisory_url":"https://www.vmware.com/security/advisories/VMSA-2022-0011.html","notes":"Normal login/catalog evidence is used; no template-injection request is sent."
+  },
+  {
+    "cve_id":"CVE-2023-3519","vendor":"Citrix","product":"Citrix NetScaler Gateway",
+    "affected_ranges":[{"start":"12.1","end":"12.1-55.297","end_inclusive":false},{"start":"13.0","end":"13.0-91.13","end_inclusive":false},{"start":"13.1","end":"13.1-49.13","end_inclusive":false}],
+    "fixed_versions":["12.1-55.297","13.0-91.13","13.1-49.13"],"required_configuration":"Gateway or AAA virtual server configured on an affected NetScaler ADC/Gateway build",
+    "required_protocol":"HTTP","required_endpoint":"/vpn/|/logon/logonpoint/|/oauth/idp/","passively_detectable":"partial","cvss_score":9.8,"severity":"critical",
+    "vendor_advisory_url":"https://support.citrix.com/article/CTX561482","notes":"Gateway identification and build string do not prove vulnerable virtual-server configuration."
+  },
+  {
+    "cve_id":"CVE-2021-26084","vendor":"Atlassian","product":"Atlassian Confluence",
+    "affected_ranges":[{"start":null,"end":"6.13.23","end_inclusive":false},{"start":"6.14.0","end":"7.4.11","end_inclusive":false},{"start":"7.5.0","end":"7.11.6","end_inclusive":false},{"start":"7.12.0","end":"7.12.5","end_inclusive":false}],
+    "fixed_versions":["6.13.23","7.4.11","7.11.6","7.12.5"],"required_configuration":"Affected Confluence Server or Data Center version",
+    "required_protocol":"HTTP","required_endpoint":null,"passively_detectable":"partial","severity":"critical",
+    "vendor_advisory_url":"https://jira.atlassian.com/browse/CONFSERVER-67940","notes":"Product/version evidence only; no OGNL expression is sent."
+  },
+  {
+    "cve_id":"CVE-2023-50164","vendor":"Apache","product":"Apache Struts",
+    "affected_ranges":[{"start":"2.0.0","end":"2.5.32","end_inclusive":true},{"start":"6.0.0","end":"6.3.0.1","end_inclusive":true}],
+    "fixed_versions":["2.5.33","6.3.0.2"],"required_configuration":"File-upload action using affected interceptor behavior and writable/executable destination conditions",
+    "required_protocol":"HTTP","required_endpoint":"/struts/|upload\\.action$|struts.*\\.action$","passively_detectable":"partial","severity":"critical",
+    "vendor_advisory_url":"https://lists.apache.org/thread/yh09b3fkf6vz5d6jdgrlvmg60lfwtqhj","notes":"An ordinary Struts action is only product evidence; upload behavior is not tested."
+  },
+  {
+    "cve_id":"CVE-2024-27348","vendor":"Apache","product":"Apache HugeGraph",
+    "affected_ranges":[{"start":"1.0.0","end":"1.3.0","end_inclusive":false}],"fixed_versions":["1.3.0"],
+    "required_configuration":"HugeGraph Server on Java 8/11 with affected Gremlin execution and insufficient authentication",
+    "required_protocol":"HTTP","required_endpoint":"/graphs/[^/]+/(gremlin|schema|vertices|edges)|/gremlin","passively_detectable":"partial","severity":"critical",
+    "vendor_advisory_url":"https://lists.apache.org/thread/nx6g6htyhpgtzsocybm242781o8w5kq9","notes":"Normal API responses do not establish authentication or command execution."
+  },
+  {
+    "cve_id":"CVE-2024-36599","vendor":"Projectworlds","product":"Aegon Life",
+    "affected_ranges":[{"start":"1.0","end":"1.0","end_inclusive":true}],"fixed_versions":[],
+    "required_configuration":"Aegon Life Insurance Management System 1.0 insertClient.php form",
+    "required_protocol":"HTTP","required_endpoint":"insertclient\\.php","passively_detectable":"partial","severity":"medium",
+    "notes":"Corrected mapping: this CVE is an Aegon Life XSS, not a Ray/Anyscale vulnerability. Only an archived normal form is inspected."
+  },
+  {
+    "cve_id":"CVE-2024-23334","vendor":"aio-libs","product":"aiohttp",
+    "affected_ranges":[{"start":null,"end":"3.9.2","end_inclusive":false}],"fixed_versions":["3.9.2"],
+    "required_configuration":"aiohttp static route configured with follow_symlinks=True",
+    "required_protocol":"HTTP","required_endpoint":null,"passively_detectable":"partial","cvss_score":5.9,"severity":"medium",
+    "vendor_advisory_url":"https://github.com/aio-libs/aiohttp/security/advisories/GHSA-5h86-8mv2-jq9f","notes":"Server/version can be observed only when disclosed; follow_symlinks configuration cannot."
+  },
+  {
+    "cve_id":"CVE-2023-46589","vendor":"Apache","product":"Apache Tomcat",
+    "affected_ranges":[{"start":"8.5.0","end":"8.5.95","end_inclusive":true},{"start":"9.0.0-M1","end":"9.0.82","end_inclusive":true},{"start":"10.1.0-M1","end":"10.1.15","end_inclusive":true},{"start":"11.0.0-M1","end":"11.0.0-M10","end_inclusive":true}],
+    "fixed_versions":["8.5.96","9.0.83","10.1.16","11.0.0-M11"],"required_configuration":"Tomcat behind a reverse proxy that interprets malformed oversized trailer headers differently",
+    "required_protocol":"HTTP","required_endpoint":null,"passively_detectable":"partial","severity":"high",
+    "vendor_advisory_url":"https://lists.apache.org/thread/0rqq6ktozqc42ro8hhxdmmdjm1k1tpxr","notes":"No malformed request is sent; reverse-proxy behavior is unobservable."
+  },
+  {
+    "cve_id":"CVE-2021-44228","vendor":"Apache","product":"Apache Log4j",
+    "affected_ranges":[{"start":"2.0-beta9","end":"2.15.0","end_inclusive":true}],"fixed_versions":["2.3.1","2.12.2","2.12.3","2.16.0"],
+    "required_configuration":"Affected log4j-core loaded by a Java process with attacker-controlled data reaching a vulnerable lookup path",
+    "required_protocol":"Java runtime/JNDI","required_endpoint":null,"passively_detectable":false,"cvss_score":10.0,"severity":"critical",
+    "vendor_advisory_url":"https://logging.apache.org/log4j/2.x/security.html","notes":"A URL or Java application fingerprint cannot prove that log4j-core is loaded or receives logged input; Common Crawl must not promote this CVE."
+  },
+  {
+    "cve_id":"CVE-2024-34102","vendor":"Adobe","product":"Adobe Commerce",
+    "affected_ranges":[{"start":null,"end":"2.4.4-p8","end_inclusive":true},{"start":"2.4.5","end":"2.4.5-p7","end_inclusive":true},{"start":"2.4.6","end":"2.4.6-p5","end_inclusive":true},{"start":"2.4.7","end":"2.4.7","end_inclusive":true}],
+    "fixed_versions":["2.4.4-p9","2.4.5-p8","2.4.6-p6","2.4.7-p1"],"required_configuration":"Affected Adobe Commerce/Magento installation accepting a crafted XML document",
+    "required_protocol":"HTTP","required_endpoint":"/rest/(all/)?v1/|/static/version[0-9]+/","passively_detectable":"partial","cvss_score":9.8,"severity":"critical",
+    "vendor_advisory_url":"https://helpx.adobe.com/security/products/magento/apsb24-40.html","notes":"Store/API and version evidence do not demonstrate XXE processing or secret disclosure."
+  },
+  {
+    "cve_id":"CVE-2024-20767","vendor":"Adobe","product":"Adobe ColdFusion",
+    "affected_ranges":[{"start":"2021.0","end":"2021.12","end_inclusive":true},{"start":"2023.0","end":"2023.6","end_inclusive":true}],
+    "fixed_versions":["2021.13","2023.7"],"required_configuration":"ColdFusion Administrator exposed to the internet on an affected update level",
+    "required_protocol":"HTTP","required_endpoint":"/cfide/","passively_detectable":"partial","cvss_score":7.4,"severity":"high",
+    "vendor_advisory_url":"https://helpx.adobe.com/security/products/coldfusion/apsb24-14.html","notes":"CFIDE and version evidence cannot establish administrator exposure policy or patch backports."
+  },
+  {
+    "cve_id":"CVE-2023-23752","vendor":"Joomla Project","product":"Joomla",
+    "affected_ranges":[{"start":"4.0.0","end":"4.2.7","end_inclusive":true}],"fixed_versions":["4.2.8"],
+    "required_configuration":"Joomla Web Services API enabled on an affected Joomla 4 release",
+    "required_protocol":"HTTP","required_endpoint":"/api/index\\.php/v1/","passively_detectable":"partial","severity":"high",
+    "vendor_advisory_url":"https://developer.joomla.org/security-centre/894-20230201-core-improper-access-check-in-webservice-endpoints.html","notes":"Only an already archived normal API response is evaluated; no private fields are requested."
+  },
+  {
+    "cve_id":"CVE-2022-24706","vendor":"Apache","product":"Apache CouchDB",
+    "affected_ranges":[{"start":null,"end":"3.2.1","end_inclusive":true}],"fixed_versions":["3.2.2"],
+    "required_configuration":"Improperly secured default CouchDB installation reachable without authentication",
+    "required_protocol":"HTTP","required_endpoint":"/_utils/|/_all_dbs","passively_detectable":"partial","severity":"critical",
+    "vendor_advisory_url":"https://lists.apache.org/thread/w24wo0h8nlctfps65txvk0oc5hdcnv00","notes":"Fauxton/root evidence does not prove the installation permits unauthenticated administrative access."
+  },
+  {
+    "cve_id":"CVE-2023-24489","vendor":"Citrix","product":"Citrix ShareFile",
+    "affected_ranges":[{"start":null,"end":"5.11.24","end_inclusive":false}],"fixed_versions":["5.11.24"],
+    "required_configuration":"Customer-managed ShareFile StorageZones Controller on an affected build",
+    "required_protocol":"HTTP","required_endpoint":"sharefile|storagezones","passively_detectable":"partial","cvss_score":9.8,"severity":"critical",
+    "vendor_advisory_url":"https://support.citrix.com/article/CTX559517","notes":"ShareFile SaaS branding alone is insufficient; response markers should identify a customer-managed controller."
+  },
+  {
+    "cve_id":"CVE-2024-1709","vendor":"ConnectWise","product":"ConnectWise ScreenConnect",
+    "affected_ranges":[{"start":null,"end":"23.9.7","end_inclusive":true}],"fixed_versions":["23.9.8"],
+    "required_configuration":"Self-hosted ScreenConnect server on an affected release",
+    "required_protocol":"HTTP","required_endpoint":"/setupwizard\\.aspx|screenconnect|/host#access","passively_detectable":"partial","cvss_score":10.0,"severity":"critical",
+    "vendor_advisory_url":"https://www.connectwise.com/company/trust/security-bulletins/connectwise-screenconnect-23.9.8","notes":"Setup/Web Client presence does not prove that the alternate-path authentication bypass remains exploitable."
+  },
+  {
+    "cve_id":"CVE-2024-20353","vendor":"Cisco","product":"Cisco ASA/FTD",
+    "affected_ranges":[],"fixed_versions":[],"range_matching_disabled":true,
+    "required_configuration":"Affected ASA/FTD train with management or VPN web server enabled",
+    "required_protocol":"HTTP","required_endpoint":"/\\+cscoe\\+/|/\\+cscot\\+/","passively_detectable":"partial","cvss_score":8.6,"severity":"high",
+    "vendor_advisory_url":"https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-asaftd-websrvs-dos-X8gNucD2","notes":"The official affected-release matrix is not a single safe interval; range promotion is disabled and no crafted header is sent."
+  },
+  {
+    "cve_id":"CVE-2023-38606","vendor":"Apple","product":"Apple operating systems",
+    "affected_ranges":[],"fixed_versions":[],"range_matching_disabled":true,
+    "required_configuration":"Affected Apple operating system and a malicious local application",
+    "required_protocol":"Local application","required_endpoint":null,"passively_detectable":false,"severity":"high",
+    "vendor_advisory_url":"https://support.apple.com/en-us/HT213846","notes":"Corrected mapping: this is an Apple kernel-state issue, not SonicWall, and cannot be assessed by Common Crawl."
+  },
+  {
+    "cve_id":"CVE-2022-41082","vendor":"Microsoft","product":"Microsoft Exchange",
+    "affected_ranges":[],"fixed_versions":[],"range_matching_disabled":true,
+    "required_configuration":"Affected Exchange 2013/2016/2019 cumulative-update branch and authenticated attacker",
+    "required_protocol":"HTTP","required_endpoint":"/(autodiscover|ews|ecp|owa)/","passively_detectable":"partial","cvss_score":8.0,"severity":"high",
+    "vendor_advisory_url":"https://msrc.microsoft.com/update-guide/vulnerability/CVE-2022-41082","notes":"X-OWA-Version can identify a build, but CU-specific patch matrices make generic interval promotion unsafe."
+  },
+  {
+    "cve_id":"CVE-2023-29357","vendor":"Microsoft","product":"Microsoft SharePoint",
+    "affected_ranges":[{"start":"16.0.0","end":"16.0.10399.20005","end_inclusive":false}],"fixed_versions":["16.0.10399.20005"],
+    "required_configuration":"SharePoint Server 2019 with affected authentication token validation",
+    "required_protocol":"HTTP","required_endpoint":"/_layouts/15/","passively_detectable":"partial","cvss_score":9.8,"severity":"critical",
+    "vendor_advisory_url":"https://msrc.microsoft.com/update-guide/vulnerability/CVE-2023-29357","notes":"Product/build evidence cannot prove token-forging exploitability or installed security updates."
+  },
+  {
+    "cve_id":"CVE-2021-23358","vendor":"Underscore.js","product":"Underscore.js",
+    "affected_ranges":[{"start":"1.3.2","end":"1.12.1","end_inclusive":false},{"start":"1.13.0-0","end":"1.13.0-2","end_inclusive":false}],
+    "fixed_versions":["1.12.1","1.13.0-2"],"required_configuration":"Application passes attacker-controlled variable option into Underscore template compilation",
+    "required_protocol":"HTTP","required_endpoint":null,"passively_detectable":"partial","cvss_score":3.3,"severity":"low",
+    "notes":"Corrected CNA score: library presence is visible, vulnerable server-side template usage is not."
+  },
+  {
+    "cve_id":"CVE-2020-7788","vendor":"npm","product":"ini",
+    "affected_ranges":[{"start":null,"end":"1.3.6","end_inclusive":false}],"fixed_versions":["1.3.6"],
+    "required_configuration":"Application parses attacker-controlled INI input with the affected npm package",
+    "required_protocol":"HTTP","required_endpoint":null,"passively_detectable":"partial","cvss_score":7.3,"severity":"high",
+    "vendor_advisory_url":"https://github.com/npm/ini/commit/56d2805e07ccd94e2ba0984ac9240ff02d44b6f1","notes":"Corrected mapping: CVE-2020-7788 affects npm ini, not Lodash. A browser asset is weak presence evidence only."
+  },
+  {
+    "cve_id":"CVE-2021-3749","vendor":"Axios","product":"Axios",
+    "affected_ranges":[{"start":null,"end":"0.21.1","end_inclusive":true}],"fixed_versions":["0.21.2"],
+    "required_configuration":"Affected Axios version processes attacker-controlled strings in the vulnerable normalization path",
+    "required_protocol":"HTTP","required_endpoint":null,"passively_detectable":"partial","cvss_score":7.5,"severity":"high",
+    "vendor_advisory_url":"https://github.com/axios/axios/commit/5b457116e31db0e88fede6c428e969e87f290929","notes":"Client asset presence does not prove attacker-controlled input reaches the ReDoS path."
+  },
+  {
+    "cve_id":"CVE-2022-25883","vendor":"npm","product":"Semver",
+    "affected_ranges":[{"start":null,"end":"7.5.2","end_inclusive":false}],"fixed_versions":["7.5.2"],
+    "required_configuration":"Application supplies attacker-controlled range strings to node-semver Range",
+    "required_protocol":"HTTP","required_endpoint":null,"passively_detectable":"partial","cvss_score":5.3,"severity":"medium",
+    "vendor_advisory_url":"https://github.com/npm/node-semver/security/advisories/GHSA-c2qf-rxjj-qqgw","notes":"Corrected CNA score: bundled asset/version presence does not establish vulnerable server-side usage."
   }
 ]

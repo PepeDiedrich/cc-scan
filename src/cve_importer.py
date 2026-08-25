@@ -159,6 +159,12 @@ def _deduplicate_ranges(ranges: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return list(unique.values())
 
 
+def has_curated_range(rule: dict[str, Any]) -> bool:
+    return bool(rule.get("affected_version_start") or rule.get("affected_version_end") or
+                rule.get("fixed_version_by_branch") or rule.get("affected_ranges") or
+                rule.get("range_matching_disabled"))
+
+
 class CVEImporter:
     def __init__(self, cache_dir: str = ".cache/cve", max_age_hours: int = 24):
         self.cache_dir = Path(cache_dir)
@@ -261,9 +267,7 @@ class CVEImporter:
                 ranges_from_nvd(rule, nvd.get(cve_id, {})))
             best_priority = max((SOURCE_PRIORITY.get(item["source"], 0) for item in all_ranges), default=0)
             ranges = [item for item in all_ranges if SOURCE_PRIORITY.get(item["source"], 0) == best_priority]
-            has_curated_range = bool(rule.get("affected_version_start") or rule.get("affected_version_end") or
-                                     rule.get("fixed_version_by_branch") or rule.get("range_matching_disabled"))
-            if ranges and not has_curated_range:
+            if ranges and not has_curated_range(rule):
                 rule["affected_ranges"] = ranges
                 imported_range_count += len(ranges)
             rule["knowledge_sources"] = {

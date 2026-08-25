@@ -43,6 +43,33 @@ class ParquetIntegrationTests(unittest.TestCase):
             state, version = con.execute(f"SELECT evidence_state, detected_version FROM read_parquet('{final}')").fetchone()
             self.assertEqual((state, version), ("LIKELY_VULNERABLE", "3.4.1"))
 
+    def test_stage1_routes_extended_product_paths(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = str(Path(directory) / "index.parquet")
+            candidates = str(Path(directory) / "candidates.parquet")
+            con = duckdb.connect()
+            con.execute("""CREATE TABLE idx(
+              url_host_registered_domain VARCHAR, url_host_name VARCHAR, url VARCHAR,
+              url_path VARCHAR, url_query VARCHAR, fetch_status SMALLINT, fetch_time TIMESTAMP,
+              content_mime_type VARCHAR, content_languages VARCHAR, warc_filename VARCHAR,
+              warc_record_offset BIGINT, warc_record_length BIGINT, subset VARCHAR)""")
+            paths = [
+                ("/jnlpJars/jenkins-cli.jar", "Jenkins"),
+                ("/public/plugins/graph/module.js", "Grafana"),
+                ("/wp-content/plugins/wp-automatic/js/main.js", "WordPress Automatic"),
+                ("/_layouts/15/start.aspx", "Microsoft SharePoint"),
+            ]
+            con.executemany("INSERT INTO idx VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", [
+                ("example.com", f"h{number}.example.com", "https://example.com" + path,
+                 path, "", 200, "2026-08-20", "text/html", "eng", "x", number, 100, "warc")
+                for number, (path, _) in enumerate(paths, 1)
+            ])
+            con.execute(f"COPY idx TO '{source}' (FORMAT PARQUET)")
+            run_stage1(con, [source], candidates)
+            actual = dict(con.execute(
+                f"SELECT normalized_path, product_hint FROM read_parquet('{candidates}')").fetchall())
+            self.assertEqual(actual, {path.lower(): product for path, product in paths})
+
 
 if __name__ == "__main__":
     unittest.main()

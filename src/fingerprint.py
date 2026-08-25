@@ -19,7 +19,9 @@ def _source_text(source: str, response: ParsedResponse) -> str:
         return response.title or ""
     if source == "header":
         selected = ("server", "x-powered-by", "via", "location", "www-authenticate",
-                    "x-generator", "x-grafana-version", "x-jenkins", "x-teamcity-node-id")
+                    "x-generator", "x-grafana-version", "x-jenkins", "x-teamcity-node-id",
+                    "x-gitlab-meta", "x-elastic-product", "x-owa-version", "x-feserver",
+                    "x-calculatedbetarget", "microsoftsharepointteamservices")
         return "\n".join(f"{k}: {response.headers[k]}" for k in selected if k in response.headers)
     return ""
 

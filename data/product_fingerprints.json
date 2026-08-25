@@ -57,5 +57,62 @@
   "Hikvision IP Camera": {"markers": [{"source":"body","pattern":"HIKVISION|WebComponents Hikvision","weight":0.65}]},
   "Openfire": {"markers": [{"source":"body","pattern":"Openfire(?: Admin Console)?|Jive Software","weight":0.65}]},
   "Ivanti Connect Secure": {"markers": [{"source":"body","pattern":"Ivanti Connect Secure|Pulse Connect Secure","weight":0.65}]},
-  "Citrix NetScaler Gateway": {"markers": [{"source":"body","pattern":"Citrix Gateway|NetScaler Gateway|LogonPoint","weight":0.65}]}
+  "Citrix NetScaler Gateway": {"markers": [{"source":"body","pattern":"Citrix Gateway|NetScaler Gateway|LogonPoint","weight":0.65}]},
+  "Jenkins": {"markers": [
+    {"source":"header","pattern":"x-jenkins:\\s*[0-9]","weight":0.8},
+    {"source":"body","pattern":"Jenkins ver\\.|jenkins-version|Jenkins-Crumb","weight":0.65},
+    {"source":"title","pattern":"Dashboard \\[Jenkins\\]|Jenkins","weight":0.55}
+  ]},
+  "GitLab": {"markers": [
+    {"source":"body","pattern":"gon\\.gitlab_url|content=\"GitLab|GitLab Community Edition|GitLab Enterprise Edition","weight":0.7},
+    {"source":"header","pattern":"x-gitlab|gitlab","weight":0.6}
+  ]},
+  "PHP": {"markers": [{"source":"header","pattern":"x-powered-by:\\s*PHP/[0-9]","weight":0.75}]},
+  "Spring Framework": {"markers": [
+    {"source":"body","pattern":"Whitelabel Error Page|Spring Boot|springFrameworkVersion","weight":0.65},
+    {"source":"header","pattern":"Spring|JSESSIONID","weight":0.5}
+  ]},
+  "Spring Cloud Config": {"markers": [
+    {"source":"body","pattern":"propertySources|spring\\.cloud\\.config|configserver","weight":0.7}
+  ]},
+  "Apache OFBiz": {"markers": [{"source":"body","pattern":"Apache OFBiz|OFBiz\\.Visitor|OFBiz ecommerce","weight":0.7}]},
+  "Elasticsearch": {"markers": [
+    {"source":"header","pattern":"x-elastic-product:\\s*Elasticsearch","weight":0.85},
+    {"source":"body","pattern":"\"cluster_name\"|\"tagline\"\\s*:\\s*\"You Know, for Search\"","weight":0.7}
+  ]},
+  "Nacos": {"markers": [{"source":"body","pattern":"Nacos|nacos-server|console-ui/public","weight":0.7}]},
+  "Check Point Quantum Gateway": {"markers": [{"source":"body","pattern":"Check Point|Mobile Access Portal|Check Point SSL Network Extender","weight":0.7}]},
+  "Ivanti Sentry": {"markers": [{"source":"body","pattern":"MobileIron Sentry|Ivanti Sentry|MICS Admin Portal","weight":0.7}]},
+  "WordPress Automatic": {"markers": [{"source":"body","pattern":"wp-automatic|WordPress Automatic|ValvePress Automatic","weight":0.7}]},
+  "WordPress": {"markers": [{"source":"body","pattern":"wp-(?:content|includes)|<meta[^>]+generator[^>]+WordPress","weight":0.7}]},
+  "Gutenberg": {"markers": [{"source":"body","pattern":"wp-block-|wp-content/plugins/gutenberg|Gutenberg","weight":0.65}]},
+  "Warpgate": {"markers": [{"source":"body","pattern":"Warpgate|warp-tech","weight":0.7}]},
+  "Roundcube Webmail": {"markers": [{"source":"body","pattern":"Roundcube Webmail|rcmail|roundcube_sessid","weight":0.7}]},
+  "cPanel": {"markers": [{"source":"body","pattern":"cPanel|cpsrvd|cPanel, L\\.L\\.C\\.","weight":0.7}]},
+  "VMware ESXi": {"markers": [{"source":"body","pattern":"VMware ESXi|VMware Host Client","weight":0.7}]},
+  "WS_FTP Server": {"markers": [{"source":"body","pattern":"WS_FTP|Ipswitch Web Transfer|Ad Hoc Transfer","weight":0.7}]},
+  "VMware Workspace ONE Access": {"markers": [{"source":"body","pattern":"Workspace ONE Access|VMware Identity Manager|Horizon Workspace","weight":0.7}]},
+  "Apache Struts": {"markers": [{"source":"body","pattern":"Struts Problem Report|struts2|org\\.apache\\.struts","weight":0.7}]},
+  "Apache HugeGraph": {"markers": [{"source":"body","pattern":"HugeGraph|hugegraph-server|hugegraph-api","weight":0.7}]},
+  "Aegon Life": {"markers": [{"source":"body","pattern":"Aegon Life|Life Insurance Management System","weight":0.7}]},
+  "aiohttp": {"markers": [{"source":"header","pattern":"aiohttp/[0-9]","weight":0.8}]},
+  "Apache Log4j": {"markers": [{"source":"body","pattern":"log4j-core|org\\.apache\\.logging\\.log4j","weight":0.65}]},
+  "Adobe Commerce": {"markers": [{"source":"body","pattern":"Magento_Ui|Magento\\.Cookies|Adobe Commerce|mage-cache-storage","weight":0.7}]},
+  "Joomla": {"markers": [{"source":"body","pattern":"Joomla! - Open Source Content Management|option=com_|/media/system/js/","weight":0.7}]},
+  "Apache CouchDB": {"markers": [{"source":"body","pattern":"\"couchdb\"\\s*:\\s*\"Welcome\"|Apache CouchDB|Fauxton","weight":0.75}]},
+  "Citrix ShareFile": {"markers": [{"source":"body","pattern":"ShareFile|StorageZones Controller|sf-csrf-token","weight":0.7}]},
+  "ConnectWise ScreenConnect": {"markers": [{"source":"body","pattern":"ScreenConnect|ConnectWise Control|SetupWizard\\.aspx","weight":0.75}]},
+  "Cisco ASA/FTD": {"markers": [{"source":"body","pattern":"Cisco Adaptive Security Appliance|Cisco ASA|WebVPN|CSCOE","weight":0.7}]},
+  "Microsoft Exchange": {"markers": [
+    {"source":"header","pattern":"x-owa-version|x-feserver|x-calculatedbetarget","weight":0.75},
+    {"source":"body","pattern":"Outlook Web App|Microsoft Exchange|owa/auth/","weight":0.65}
+  ]},
+  "Microsoft SharePoint": {"markers": [
+    {"source":"header","pattern":"microsoftsharepointteamservices","weight":0.85},
+    {"source":"body","pattern":"_layouts/15|SharePoint","weight":0.6}
+  ]},
+  "Underscore.js": {"markers": [{"source":"body","pattern":"Underscore(?:\\.js)? [0-9]|_\\.VERSION\\s*=","weight":0.7}]},
+  "ini": {"markers": [{"source":"body","pattern":"ini\\.parse|exports\\.decode\\s*=|npm ini","weight":0.65}]},
+  "Axios": {"markers": [{"source":"body","pattern":"axios v?[0-9]|axios\\.VERSION|AxiosError","weight":0.7}]},
+  "Semver": {"markers": [{"source":"body","pattern":"node-semver|SEMVER_SPEC_VERSION|class SemVer","weight":0.65}]}
 }

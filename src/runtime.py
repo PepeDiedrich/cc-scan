@@ -149,6 +149,7 @@ class RuntimeMonitor:
 
     def add_results(self, rows: list[dict]) -> None:
         fields = ("observed_at", "host", "url", "product", "detected_version", "cve_id",
+                  "cve_cvss_score", "cve_severity", "cve_advisory_url",
                   "evidence_state", "overall_confidence", "notes")
         with self.lock:
             for row in rows:
@@ -228,7 +229,7 @@ DASHBOARD_HTML = r"""<!doctype html>
 body{font:14px system-ui;margin:0;background:var(--bg);color:#edf3f7}main{max-width:1300px;margin:auto;padding:24px}
 h1{font-size:24px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}.card{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:14px}.value{font-size:24px;color:var(--green)}table{width:100%;border-collapse:collapse;background:var(--card)}th,td{padding:8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--muted)}pre{height:260px;overflow:auto;background:#080b0f;padding:12px;border-radius:8px;white-space:pre-wrap}.muted{color:var(--muted)}
 </style></head><body><main><h1>cc-scan <span id="run" class="muted"></span></h1><div id="cards" class="grid"></div>
-<h2>Letzte Ergebnisse</h2><div style="overflow:auto"><table><thead><tr><th>Status</th><th>Host</th><th>Produkt</th><th>Version/CVE</th><th>Confidence</th><th>URL</th></tr></thead><tbody id="results"></tbody></table></div>
+<h2>Letzte Ergebnisse</h2><div style="overflow:auto"><table><thead><tr><th>Status</th><th>Host</th><th>Produkt</th><th>Version/CVE</th><th>CVSS</th><th>Confidence</th><th>URL</th></tr></thead><tbody id="results"></tbody></table></div>
 <h2>Log</h2><pre id="logs"></pre></main><script>
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>new Intl.NumberFormat('de-DE').format(n||0); const mb=n=>(Number(n||0)/1e6).toFixed(1)+' MB';
@@ -238,6 +239,6 @@ let done=Object.values(s.shards||{}).filter(v=>v.stage2_done).length;
 let rate=((x.index_download_bytes_per_second||0)+(x.warc_download_bytes_per_second||0))*8/1e6;
 let cards=[['Phase',s.phase||'-'],['Shards',done+' / '+(s.total_shards||0)],['Kandidaten',fmt(x.candidate_count)],['Ergebnisse',fmt(x.result_count)],['Likely/Confirmed',fmt(x.likely_vulnerable_count)+' / '+fmt(x.confirmed_count)],['Download',rate.toFixed(2)+' Mbit/s'],['Index geladen',mb(x.index_download_bytes)],['WARC geladen',mb(x.warc_download_bytes)],['Speicher frei',mb(s.disk_free_bytes)],['Fehler',fmt(x.warc_failure_count)],['Laufzeit',((s.uptime_seconds||0)/3600).toFixed(1)+' h']];
 document.querySelector('#cards').innerHTML=cards.map(v=>`<div class="card"><div class="muted">${esc(v[0])}</div><div class="value">${esc(v[1])}</div></div>`).join('');
-document.querySelector('#results').innerHTML=(s.recent_results||[]).map(r=>`<tr><td>${esc(r.evidence_state)}</td><td>${esc(r.host)}</td><td>${esc(r.product)}</td><td>${esc(r.detected_version||r.cve_id||'')}</td><td>${esc(r.overall_confidence)}</td><td>${esc(r.url)}</td></tr>`).join('');
+document.querySelector('#results').innerHTML=(s.recent_results||[]).map(r=>`<tr><td>${esc(r.evidence_state)}</td><td>${esc(r.host)}</td><td>${esc(r.product)}</td><td>${esc([r.detected_version,r.cve_id].filter(Boolean).join(' / '))}</td><td>${esc(r.cve_cvss_score||'')} ${esc(r.cve_severity||'')}</td><td>${esc(r.overall_confidence)}</td><td>${esc(r.url)}</td></tr>`).join('');
 const l=await fetch('/api/logs').then(r=>r.text()),e=document.querySelector('#logs');let bottom=e.scrollTop+e.clientHeight>=e.scrollHeight-20;e.textContent=l;if(bottom)e.scrollTop=e.scrollHeight;}catch(e){document.querySelector('#run').textContent='nicht erreichbar'}}
 refresh();setInterval(refresh,2000);</script></body></html>"""
