@@ -1,12 +1,27 @@
 import unittest
+from unittest.mock import patch
 
-from src.cve_importer import has_curated_range, ranges_from_cve_org, ranges_from_ghsa, ranges_from_nvd
+from src.cve_importer import (CVEImporter, has_curated_range, ranges_from_cve_org,
+                              ranges_from_ghsa, ranges_from_nvd)
 
 
 RULE = {"vendor": "Acme", "product": "Widget", "cve_id": "CVE-2099-0001"}
 
 
 class CVEImporterTests(unittest.TestCase):
+    @patch("src.cve_importer._request")
+    def test_github_budget_reserves_one_request(self, request):
+        request.return_value = (b'{"resources":{"core":{"remaining":3}}}', "application/json")
+        importer = CVEImporter()
+        self.assertEqual(importer._github_budget({}, 10), 2)
+
+    @patch("src.cve_importer._request", side_effect=OSError("offline"))
+    @patch.dict("os.environ", {}, clear=True)
+    def test_github_budget_fails_closed_without_token(self, _request):
+        importer = CVEImporter()
+        self.assertEqual(importer._github_budget({}, 10), 0)
+        self.assertEqual(len(importer.errors), 1)
+
     def test_nvd_cpe_range_is_normalized(self):
         cve = {"configurations": [{"nodes": [{"cpeMatch": [{
             "vulnerable": True, "criteria": "cpe:2.3:a:acme:widget:*:*:*:*:*:*:*:*",

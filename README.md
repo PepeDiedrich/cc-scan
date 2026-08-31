@@ -58,6 +58,11 @@ Der Updater lädt konfigurierte Vendor-Advisories sowie CVE.org-CNA-, GHSA- und 
 ```
 
 `NVD_API_KEY` und `GITHUB_TOKEN` sind optional und erhöhen lediglich die API-Limits. Beim automatischen Update eines Scans wird eine generierte Regeldatei unter `.cache/cve/` verwendet, damit die kuratierte Quelldatei unverändert bleibt.
+Ohne `GITHUB_TOKEN` verwendet der Updater vorhandene GHSA-Cacheeinträge, startet aber keine neuen
+GHSA-API-Abfragen, da das anonyme Stundenkontingent kleiner als der Regelsatz ist und oft mit anderen
+Prozessen geteilt wird. Mit Token prüft er das verbleibende Kontingent, reserviert einen Request und
+begrenzt die Parallelität auf zwei. Fehlendes Kontingent wird als übersprungene Quelle gemeldet, statt
+zu Beginn einen Burst aus Rate-Limit-Fehlern zu erzeugen.
 
 ## Ausführen
 
@@ -95,9 +100,19 @@ shardweise unter `security_results/<crawl-id>/`, Zwischenstand und Log in `scan-
 `scan.log`. Ein abgebrochener Lauf wird mit demselben Befehl anhand abgeschlossener Shards und Batches
 fortgesetzt.
 
-Das Dashboard läuft während des Scans unter `http://127.0.0.1:8080` und zeigt Phase, Shards,
-Kandidaten, Ergebniszustände, aktuelle und übertragene Daten, freien Speicher, letzte Funde und Logs.
-Von einem anderen Rechner sollte es über einen SSH-Tunnel geöffnet werden:
+Für einen bewusst vollständigen Neustart ab Shard 0 werden nur die Laufdaten des gewählten Crawls,
+der WARC-Cache sowie Status und Log verworfen:
+
+```bash
+./start-300gb.sh --fresh-start
+```
+
+Das 300-GB-Profil bindet das Dashboard ausschließlich an die aktuelle Tailscale-IPv4-Adresse des
+Rechners (zum Beispiel `http://100.x.y.z:8080`). Damit ist es aus dem Tailnet erreichbar, soweit die
+Tailscale-ACL Port 8080 erlaubt, aber nicht zusätzlich über das LAN-Interface veröffentlicht. Die
+konkrete URL wird beim Start ausgegeben. Das Dashboard zeigt Phase, Shards, Kandidaten,
+Ergebniszustände, aktuelle und übertragene Daten, freien Speicher, letzte Funde und Logs.
+Ohne Tailscale kann der normale Runner weiterhin lokal gestartet oder ein SSH-Tunnel verwendet werden:
 
 ```bash
 ssh -L 8080:127.0.0.1:8080 user@scan-machine

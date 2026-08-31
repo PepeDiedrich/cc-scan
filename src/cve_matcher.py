@@ -58,6 +58,10 @@ def match_cves(product: str, version: DetectedVersion | None, path: str,
         if product_confidence < 0.5:
             # A path hint by itself must never become a CVE candidate.
             continue
+        if not version:
+            # An archived endpoint without a response-derived version is useful
+            # product evidence, but not enough to infer a specific CVE.
+            continue
         endpoint = rule.get("required_endpoint")
         endpoint_match = not endpoint or bool(re.search(endpoint, path, re.I))
         if not endpoint_match:

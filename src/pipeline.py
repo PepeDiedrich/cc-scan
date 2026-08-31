@@ -4,6 +4,7 @@ import json
 import re
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 from typing import Any
 
 from .confidence import evidence_state, freshness, overall_confidence
@@ -25,6 +26,19 @@ PUBLIC_CODE_HOST = re.compile(
     r"(?:github(?:usercontent)?\.com|gitlab\.com|bitbucket\.org|googlesource\.com|"
     r"sourceforge\.net|gitee\.com|codeberg\.org)$", re.I)
 SENSITIVE_QUERY = re.compile(r"(?i)((?:token|key|secret|password|passwd|signature|auth|session)[^=&]*=)[^&]*")
+_WORKER_FINGERPRINTS: dict | None = None
+
+
+@dataclass(frozen=True)
+class _BodyHashPeer:
+    normalized_body_hash: str
+
+
+def initialize_analysis_worker(cve_rules: list[dict]) -> None:
+    """Initialize spawned analysis processes with the parent's current rules."""
+    global _WORKER_FINGERPRINTS
+    CVE_RULES[:] = cve_rules
+    _WORKER_FINGERPRINTS = load_fingerprints(FINGERPRINT_FILE)
 
 
 def analyze_record(row: dict[str, Any], response: ParsedResponse,
@@ -207,6 +221,157 @@ def enrich_rows(rows: list[dict[str, Any]], fetcher: WarcFetcher,
     return output, {"candidate_count": len(rows), "mime_skipped_count": len(rows) - len(selected),
                     "warc_record_count": len(fetched),
                     "warc_failure_count": failures, "result_count": len(output)}
+
+
+def fetch_and_parse_rows(rows: list[dict[str, Any]], fetcher: WarcFetcher,
+                         max_body_bytes: int = 2_000_000,
+                         parse_workers: int = 1) -> tuple[dict[tuple, ParsedResponse], dict[str, int]]:
+    """Fetch and parse a batch once for both soft-404 indexing and enrichment."""
+    binary_prefixes = ("image/", "audio/", "video/", "font/")
+    selected = [row for row in rows
+                if not str(row.get("content_mime_type") or "").lower().startswith(binary_prefixes)]
+    records = [(row["warc_filename"], int(row["warc_record_offset"]),
+                int(row["warc_record_length"])) for row in selected]
+    fetched = fetcher.fetch_many(records)
+    parsed, failures = _parse_fetched(fetched, max_body_bytes, parse_workers)
+    categories: dict[str, int] = defaultdict(int)
+    for value in fetched.values():
+        if isinstance(value, Exception):
+            categories[getattr(value, "category", "other")] += 1
+    return parsed, {
+        "mime_skipped_count": len(rows) - len(selected),
+        "warc_record_count": len(fetched),
+        "warc_failure_count": failures,
+        "warc_fetch_failure_count": sum(categories.values()),
+        "warc_parse_failure_count": failures - sum(categories.values()),
+        **{f"warc_{category}_count": count for category, count in categories.items()},
+    }
+
+
+def index_parsed_soft404(rows: list[dict[str, Any]], parsed: dict[tuple, ParsedResponse],
+                         fetcher: WarcFetcher, index: Soft404Index) -> dict[str, int]:
+    """Add already parsed responses to the global similarity index."""
+    indexed = 0
+    for row in rows:
+        key = (row["warc_filename"], int(row["warc_record_offset"]), int(row["warc_record_length"]))
+        response = parsed.get(key)
+        if response is None:
+            continue
+        index.add(fetcher.record_key(*key), row["host"], row["normalized_path"], response)
+        indexed += 1
+    index.commit()
+    return {"soft404_indexed_count": indexed,
+            "soft404_index_failure_count": 0}
+
+
+def enrich_parsed_rows(rows: list[dict[str, Any]], parsed_by_key: dict[tuple, ParsedResponse],
+                        soft404_index: Soft404Index | None = None) -> tuple[list[dict], dict[str, int]]:
+    """Analyze a batch whose WARC responses have already been parsed."""
+    host_peers: dict[str, list[tuple[str, ParsedResponse]]] = defaultdict(list)
+    for row in rows:
+        key = (row["warc_filename"], int(row["warc_record_offset"]), int(row["warc_record_length"]))
+        if key in parsed_by_key:
+            host_peers[row["host"]].append((row["normalized_path"], parsed_by_key[key]))
+    definitions = load_fingerprints(FINGERPRINT_FILE)
+    output = []
+    for row in rows:
+        key = (row["warc_filename"], int(row["warc_record_offset"]), int(row["warc_record_length"]))
+        response = parsed_by_key.get(key)
+        if response:
+            context = soft404_index.context(row["host"], row["normalized_path"],
+                                            response.normalized_body_hash) if soft404_index else None
+            output.extend(analyze_record(row, response, host_peers[row["host"]], definitions,
+                                         soft404_context=context))
+        else:
+            reason = "MIME_FILTERED" if str(row.get("content_mime_type") or "").lower().startswith(
+                ("image/", "audio/", "video/", "font/")) else "WARC_FETCH_FAILED"
+            output.append(fallback_result(row, reason))
+    return output, {"candidate_count": len(rows), "result_count": len(output)}
+
+
+def _enrich_parsed_chunk(rows: list[dict[str, Any]],
+                         parsed_by_key: dict[tuple, ParsedResponse],
+                         contexts: dict[tuple, dict[str, int | bool]],
+                         shared_peer_hashes: dict[str, list[tuple[str, str]]] | None = None) -> list[dict]:
+    """CPU-heavy analysis entry point used inside spawned worker processes."""
+    global _WORKER_FINGERPRINTS
+    if _WORKER_FINGERPRINTS is None:
+        _WORKER_FINGERPRINTS = load_fingerprints(FINGERPRINT_FILE)
+    host_peers: dict[str, list[tuple[str, ParsedResponse]]] = defaultdict(list)
+    for row in rows:
+        key = (row["warc_filename"], int(row["warc_record_offset"]), int(row["warc_record_length"]))
+        if key in parsed_by_key:
+            host_peers[row["host"]].append((row["normalized_path"], parsed_by_key[key]))
+    for host, peers in (shared_peer_hashes or {}).items():
+        host_peers[host] = [(path, _BodyHashPeer(body_hash)) for path, body_hash in peers]
+    output = []
+    for row in rows:
+        key = (row["warc_filename"], int(row["warc_record_offset"]), int(row["warc_record_length"]))
+        response = parsed_by_key.get(key)
+        if response:
+            output.extend(analyze_record(row, response, host_peers[row["host"]],
+                                         _WORKER_FINGERPRINTS,
+                                         soft404_context=contexts.get(key)))
+        else:
+            reason = "MIME_FILTERED" if str(row.get("content_mime_type") or "").lower().startswith(
+                ("image/", "audio/", "video/", "font/")) else "WARC_FETCH_FAILED"
+            output.append(fallback_result(row, reason))
+    return output
+
+
+def enrich_parsed_rows_parallel(rows: list[dict[str, Any]],
+                                parsed_by_key: dict[tuple, ParsedResponse],
+                                soft404_index: Soft404Index, analysis_pool,
+                                analysis_workers: int) -> tuple[list[dict], dict[str, int]]:
+    """Distribute independent host groups across CPU processes."""
+    contexts = {}
+    for row in rows:
+        key = (row["warc_filename"], int(row["warc_record_offset"]), int(row["warc_record_length"]))
+        response = parsed_by_key.get(key)
+        if response:
+            contexts[key] = soft404_index.context(row["host"], row["normalized_path"],
+                                                  response.normalized_body_hash)
+
+    # Split oversized host groups while retaining their body hashes for the
+    # same-batch peer comparisons used by the soft-404 classifier.
+    groups: dict[str, list[dict]] = defaultdict(list)
+    for row in rows:
+        groups[row.get("host") or ""].append(row)
+    bucket_count = min(max(1, analysis_workers), max(1, len(groups)))
+    buckets: list[list[dict]] = [[] for _ in range(bucket_count)]
+    target_size = max(1, (len(rows) + bucket_count - 1) // bucket_count)
+    shared_peer_hashes: dict[str, list[tuple[str, str]]] = {}
+    chunks: list[list[dict]] = []
+    for host, group in groups.items():
+        if len(group) > target_size:
+            shared_peer_hashes[host] = [
+                (row["normalized_path"], parsed_by_key[key].normalized_body_hash)
+                for row in group
+                if (key := (row["warc_filename"], int(row["warc_record_offset"]),
+                            int(row["warc_record_length"]))) in parsed_by_key
+            ]
+        chunks.extend(group[position:position + target_size]
+                      for position in range(0, len(group), target_size))
+    for chunk in sorted(chunks, key=len, reverse=True):
+        target = min(range(bucket_count), key=lambda position: len(buckets[position]))
+        buckets[target].extend(chunk)
+
+    futures = []
+    for bucket in buckets:
+        keys = {(row["warc_filename"], int(row["warc_record_offset"]),
+                 int(row["warc_record_length"])) for row in bucket}
+        bucket_parsed = {key: value for key, value in parsed_by_key.items() if key in keys}
+        bucket_contexts = {key: value for key, value in contexts.items() if key in keys}
+        bucket_shared_peers = {
+            host: peers for host, peers in shared_peer_hashes.items()
+            if any(row.get("host") == host for row in bucket)
+        }
+        futures.append(analysis_pool.submit(_enrich_parsed_chunk, bucket,
+                                            bucket_parsed, bucket_contexts, bucket_shared_peers))
+    output = []
+    for future in futures:
+        output.extend(future.result())
+    return output, {"candidate_count": len(rows), "result_count": len(output)}
 
 
 def index_soft404_rows(rows: list[dict[str, Any]], fetcher: WarcFetcher,

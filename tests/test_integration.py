@@ -28,8 +28,8 @@ class ParquetIntegrationTests(unittest.TestCase):
             con.executemany("INSERT INTO idx VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", [
                 ("example.com", "app.example.com", "https://app.example.com/api/v1/validate/code",
                  "/api/v1/validate/code", "", 405, "2026-08-20", "application/json", "eng", "x", 1, 2, "warc"),
-                ("example.com", "cdn.example.com", "https://cdn.example.com/jquery.min.js?ver=3.4.1",
-                 "/jquery.min.js", "ver=3.4.1", 200, "2026-08-20", "application/javascript", "eng", "y", 3, 4, "warc"),
+                ("example.com", "maps.example.com", "https://maps.example.com/geoserver/wms?version=2.25.1",
+                 "/geoserver/wms", "version=2.25.1", 200, "2026-08-20", "text/html", "eng", "y", 3, 4, "warc"),
             ])
             con.execute(f"COPY idx TO '{source}' (FORMAT PARQUET)")
             run_stage1(con, [source], candidates)
@@ -37,11 +37,11 @@ class ParquetIntegrationTests(unittest.TestCase):
             names = [item[0] for item in cursor.description]
             rows = [dict(zip(names, values)) for values in cursor.fetchall()]
             self.assertEqual(rows[0]["fetch_status"], 405)
-            self.assertEqual(rows[1]["normalized_query"], "ver=3.4.1")
-            enriched = analyze_record(rows[1], response("/*! jQuery */", content_type="application/javascript"))
+            self.assertEqual(rows[1]["normalized_query"], "version=2.25.1")
+            enriched = analyze_record(rows[1], response("<title>GeoServer</title>GeoServer 2.25.1"))
             write_parquet(con, enriched, final)
             state, version = con.execute(f"SELECT evidence_state, detected_version FROM read_parquet('{final}')").fetchone()
-            self.assertEqual((state, version), ("LIKELY_VULNERABLE", "3.4.1"))
+            self.assertEqual((state, version), ("LIKELY_VULNERABLE", "2.25.1"))
 
     def test_stage1_routes_extended_product_paths(self):
         with tempfile.TemporaryDirectory() as directory:

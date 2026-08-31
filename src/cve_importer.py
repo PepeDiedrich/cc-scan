@@ -6,6 +6,7 @@ import os
 import re
 import time
 import urllib.parse
+import urllib.error
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
@@ -16,21 +17,39 @@ from typing import Any
 NVD_URL = "https://services.nvd.nist.gov/rest/json/cves/2.0"
 CVE_URL = "https://cveawg.mitre.org/api/cve/{cve_id}"
 GHSA_URL = "https://api.github.com/advisories"
+GITHUB_RATE_URL = "https://api.github.com/rate_limit"
 SOURCE_PRIORITY = {"vendor": 100, "cve.org": 90, "ghsa": 80, "nvd": 70}
 
 
-def _request(url: str, headers: dict[str, str] | None = None, timeout: int = 60) -> tuple[bytes, str]:
+def _request(url: str, headers: dict[str, str] | None = None, timeout: int = 60,
+             attempts: int = 3) -> tuple[bytes, str]:
     base_headers = {"User-Agent": "cc-scan/3.0 CVE knowledge updater", "Accept": "application/json"}
     base_headers.update(headers or {})
     last_error = None
-    for attempt in range(3):
+    attempts = max(1, attempts)
+    for attempt in range(attempts):
         try:
             with urllib.request.urlopen(urllib.request.Request(url, headers=base_headers), timeout=timeout) as response:
                 return response.read(), response.headers.get("Content-Type", "")
         except OSError as exc:
             last_error = exc
-            if attempt < 2:
-                time.sleep(1.0 * (2 ** attempt))
+            if attempt < attempts - 1:
+                delay = 1.0 * (2 ** attempt)
+                if isinstance(exc, urllib.error.HTTPError) and exc.code in (403, 429):
+                    retry_after = exc.headers.get("Retry-After")
+                    reset = exc.headers.get("X-RateLimit-Reset")
+                    try:
+                        delay = max(delay, float(retry_after)) if retry_after else delay
+                    except ValueError:
+                        pass
+                    try:
+                        delay = max(delay, float(reset) - time.time()) if reset else delay
+                    except ValueError:
+                        pass
+                    # Do not stall scan startup for a remote hourly quota window.
+                    if delay > 30:
+                        break
+                time.sleep(min(30.0, max(0.0, delay)))
     raise OSError(f"source request failed: {url}: {last_error}")
 
 
@@ -170,15 +189,32 @@ class CVEImporter:
         self.cache_dir = Path(cache_dir)
         self.max_age_hours = max_age_hours
         self.errors: list[str] = []
+        self.source_skipped_count = 0
+
+    def _github_budget(self, headers: dict[str, str], wanted: int) -> int:
+        """Preflight GitHub's primary quota so an update never starts with 403 bursts."""
+        if wanted <= 0:
+            return 0
+        try:
+            raw, _ = _request(GITHUB_RATE_URL, headers, attempts=1)
+            core = json.loads(raw).get("resources", {}).get("core", {})
+            # Keep one request in reserve for small quota races with other processes.
+            return min(wanted, max(0, int(core.get("remaining", 0)) - 1))
+        except (OSError, ValueError, TypeError) as exc:
+            self.errors.append(f"ghsa:rate-check:{exc}")
+            # A configured token has ample quota in normal operation. Without one,
+            # failing closed prevents the updater from blindly exhausting 60 req/h.
+            return wanted if os.environ.get("GITHUB_TOKEN") else 0
 
     def _json_source(self, source: str, cve_id: str, url: str,
-                     headers: dict[str, str] | None = None) -> Any | None:
+                     headers: dict[str, str] | None = None, timeout: int = 30,
+                     attempts: int = 2) -> Any | None:
         path = self.cache_dir / source / f"{cve_id}.json"
         cached = _cache_read(path, self.max_age_hours)
         if cached is not None:
             return cached
         try:
-            raw, _ = _request(url, headers)
+            raw, _ = _request(url, headers, timeout=timeout, attempts=attempts)
             value = json.loads(raw)
             _cache_write(path, value)
             return value
@@ -200,7 +236,7 @@ class CVEImporter:
             group = missing[start:start + 100]
             try:
                 query = urllib.parse.urlencode({"cveIds": ",".join(group)})
-                raw, _ = _request(f"{NVD_URL}?{query}", headers)
+                raw, _ = _request(f"{NVD_URL}?{query}", headers, timeout=30, attempts=2)
                 payload = json.loads(raw)
                 for wrapper in payload.get("vulnerabilities", []):
                     cve = wrapper.get("cve", {})
@@ -222,7 +258,8 @@ class CVEImporter:
         if cached is not None:
             return cached
         try:
-            raw, content_type = _request(url, {"Accept": "application/json, text/html;q=0.9"})
+            raw, content_type = _request(
+                url, {"Accept": "application/json, text/html;q=0.9"}, timeout=20, attempts=1)
             metadata: dict[str, Any] = {"url": url, "content_type": content_type,
                                         "sha256": hashlib.sha256(raw).hexdigest()}
             if "json" in content_type.lower() or raw.lstrip().startswith((b"{", b"[")):
@@ -240,18 +277,44 @@ class CVEImporter:
         if os.environ.get("GITHUB_TOKEN"):
             github_headers["Authorization"] = f"Bearer {os.environ['GITHUB_TOKEN']}"
         fetched: dict[tuple[str, str], Any] = {}
+
+        missing_ghsa = []
+        for cve_id in cve_ids:
+            cached = _cache_read(self.cache_dir / "ghsa" / f"{cve_id}.json", self.max_age_hours)
+            if cached is None:
+                missing_ghsa.append(cve_id)
+            else:
+                fetched[("ghsa", cve_id)] = cached
+        # The anonymous GitHub quota (60/hour per public IP) is smaller than
+        # this rule set and is commonly already shared by other processes.
+        # Cached GHSA data remains usable; fresh API calls require a token.
+        github_budget = (self._github_budget(github_headers, len(missing_ghsa))
+                         if os.environ.get("GITHUB_TOKEN") else 0)
+        allowed_ghsa = missing_ghsa[:github_budget]
+        self.source_skipped_count += len(missing_ghsa) - len(allowed_ghsa)
+
         with ThreadPoolExecutor(max_workers=6) as pool:
             futures = {}
             for cve_id in cve_ids:
                 futures[pool.submit(self._json_source, "cve.org", cve_id,
                                     CVE_URL.format(cve_id=cve_id))] = ("cve.org", cve_id)
-                url = GHSA_URL + "?" + urllib.parse.urlencode({"cve_id": cve_id, "per_page": 100})
-                futures[pool.submit(self._json_source, "ghsa", cve_id, url, github_headers)] = ("ghsa", cve_id)
             for rule in rules:
                 if rule.get("vendor_advisory_url") or rule.get("vendor_csaf_url"):
                     futures[pool.submit(self._vendor_source, rule)] = ("vendor", rule["cve_id"])
             for future in as_completed(futures):
                 fetched[futures[future]] = future.result()
+
+        # Two concurrent GitHub requests avoid the old six-request startup burst
+        # while keeping a cold knowledge refresh reasonably quick.
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            ghsa_futures = {}
+            for cve_id in allowed_ghsa:
+                url = GHSA_URL + "?" + urllib.parse.urlencode({"cve_id": cve_id, "per_page": 100})
+                future = pool.submit(self._json_source, "ghsa", cve_id, url, github_headers)
+                ghsa_futures[future] = cve_id
+            for future in as_completed(ghsa_futures):
+                cve_id = ghsa_futures[future]
+                fetched[("ghsa", cve_id)] = future.result()
 
         now = datetime.now(timezone.utc).isoformat()
         imported_range_count = 0
@@ -282,7 +345,8 @@ class CVEImporter:
                                                    key=lambda item: SOURCE_PRIORITY.get(item, 0), reverse=True),
             }
         return rules, {"rule_count": len(rules), "imported_range_count": imported_range_count,
-                       "source_error_count": len(self.errors)}
+                       "source_error_count": len(self.errors),
+                       "source_skipped_count": self.source_skipped_count}
 
 
 def update_file(path: str, cache_dir: str = ".cache/cve", max_age_hours: int = 24,

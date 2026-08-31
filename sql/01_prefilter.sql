@@ -132,9 +132,21 @@ WITH source AS (
       ELSE 'fingerprint,passive-validation'
     END AS suggested_validation_tags
   FROM normalized
-  WHERE regexp_matches(normalized_path,
+  WHERE (regexp_matches(normalized_path,
     '(\.env|/\.git/|\.map$|\.(sql|dump|sqlite|bak|tfstate|tfvars)|wp-config|settings\.php|id_rsa|id_ed25519|credentials|actuator|app/rest|login\.html$|teamcity|jnlpjars/jenkins-cli|/cli/?$|/jenkins/|users/password|/gitlab/|public/plugins|wp-content/plugins/(wp-automatic|gutenberg)|wp-includes|wp-login\.php|php-cgi|cgi-bin/php|spring-cloud-config|configserver|/webtools/|/partymgr/|/ofbiz/|clients/mycrl|checkpoint|mobileaccess|/mics/|mobileiron/sentry|sentry/admin|roundcube|cgi-sys|cpsess|/webcall/|thinclient|/aht/|athenticate\.asp|catalog-portal|/saas/auth/|/struts/|upload\.action|/graphs/[^/]+/(gremlin|schema|vertices|edges)|/gremlin|insertclient\.php|log4j-core[^/]*\.jar|/rest/(all/)?v1/|static/version[0-9]+|api/index\.php/v1|administrator/index\.php|/_utils/|sharefile|storagezones|setupwizard\.aspx|screenconnect|/\+cscoe\+/|/\+cscot\+/|/_layouts/15/|geoserver|jolokia|global-protect|mgmt/tm|setupadministrator|setup/setup-|oauth/idp|logon/logonpoint|vpn/index\.html|manager/(html|text)|jmx-console|web-console|invoker|wls-wsat|_ignition|eval-stdin|autodiscover|/ews/|/ecp/|vropspluginui|remote/fgt_lang|sslvpn|/cacti/|/cfide/|service/soap|goanywhere|moveitisapi|webinterface|/mifs/|/minio/|/nacos/|/apisix/|/druid/|sdk/weblanguage|validate/code|langflow|nifi|airflow|grafana|kibana|swagger|openapi|graphql|graphiql|phpinfo|server-status|api/v4|wd/hub|terminals|_cat|/_cluster/|/_nodes/|_all_dbs|v[12]/keys|jquery|pdf(\.min)?\.js|angular|lodash|bootstrap|purify|ckeditor|tinymce|underscore(\.min)?\.js|axios(\.min)?\.js|(node-)?semver(\.min)?\.js|(^|/)ini(\.min)?\.js)')
-    OR regexp_matches(lower(url), 'https?://(cdn\.polyfill\.io|polyfill\.io|bootcdn\.net|bootcss\.com)/')
+    OR regexp_matches(lower(url), 'https?://(cdn\.polyfill\.io|polyfill\.io|bootcdn\.net|bootcss\.com)/'))
+    -- Client-library names in article text/comments are not assets. Require a
+    -- concrete JavaScript asset path before scheduling an expensive WARC fetch.
+    AND NOT (regexp_matches(normalized_path,
+      '(^|/)(jquery|pdf|angular|lodash|bootstrap|purify|ckeditor|tinymce|underscore|axios|(?:node-)?semver|ini)')
+      AND NOT regexp_matches(normalized_path,
+        '(^|/)(jquery|pdf|angular|lodash|bootstrap|purify|ckeditor|tinymce|underscore|axios|(?:node-)?semver|ini)[^/]*\.js$'))
 )
 SELECT * FROM candidates
+WHERE observed_signal <> 'CLIENT_COMPONENT_PATH_OBSERVED'
+  -- These broad route families dominated the old run without yielding a
+  -- response-backed version/CVE match. Keep explicit exposure and secret paths.
+  AND NOT (product_hint = 'Generic security endpoint'
+           AND observed_signal = 'PRODUCT_ENDPOINT_OBSERVED')
+  AND product_hint NOT IN ('Adobe Commerce', 'cPanel')
 ) TO '__OUTPUT__' (FORMAT PARQUET, COMPRESSION ZSTD);

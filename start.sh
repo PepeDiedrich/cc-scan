@@ -34,7 +34,7 @@ if [ ! -d "$VENV_DIR" ]; then
 fi
 
 # 3. Abhaengigkeiten installieren/aktualisieren
-if ! "$VENV_DIR/bin/python" -c "import duckdb, brotli" &>/dev/null; then
+if ! "$VENV_DIR/bin/python" -c "import duckdb, brotli, pytz" &>/dev/null; then
     echo "[*] Installiere Abhaengigkeiten ..."
     "$VENV_DIR/bin/pip" install -q --upgrade pip
     "$VENV_DIR/bin/pip" install -q -r requirements.txt

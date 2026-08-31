@@ -9,9 +9,13 @@ import os
 import sys
 import tempfile
 import threading
+import time
+import urllib.error
 import urllib.request
 import queue
 import shutil
+import multiprocessing
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from pathlib import Path
 
 try:
@@ -19,7 +23,10 @@ try:
 except ImportError:  # pragma: no cover
     duckdb = None
 
-from src.pipeline import enrich_rows, index_soft404_rows
+from src.pipeline import (enrich_rows, fetch_and_parse_rows, index_parsed_soft404,
+                          index_soft404_rows, enrich_parsed_rows,
+                          enrich_parsed_rows_parallel, initialize_analysis_worker)
+from src.settings import CVE_RULES
 from src.soft404_index import Soft404Index
 from src.warc_fetcher import WarcFetcher
 from src.runtime import BandwidthLimiter, DashboardServer, RuntimeMonitor, copy_limited
@@ -28,6 +35,35 @@ ROOT = Path(__file__).resolve().parent
 COLLINFO_URL = "https://index.commoncrawl.org/collinfo.json"
 DATA_BASE = "https://data.commoncrawl.org/"
 SQL_FILE = ROOT / "sql" / "01_prefilter.sql"
+
+# DuckDB's JSON auto-detection uses JSON for a column when every value in a
+# batch is null.  Result batches are deliberately small, so optional fields
+# frequently alternate between JSON (all null) and their real type.  Keep the
+# on-disk schema stable instead of relying on per-batch inference.
+RESULT_SCHEMA = (
+    ("registered_domain", "VARCHAR"), ("host", "VARCHAR"), ("url", "VARCHAR"),
+    ("normalized_path", "VARCHAR"), ("normalized_query", "VARCHAR"),
+    ("normalized_url", "VARCHAR"), ("fetch_status", "BIGINT"),
+    ("fetch_time", "TIMESTAMP"), ("content_mime_type", "VARCHAR"),
+    ("content_languages", "VARCHAR"), ("product", "VARCHAR"),
+    ("product_confidence", "DOUBLE"), ("detected_version", "VARCHAR"),
+    ("version_source", "VARCHAR"), ("version_confidence", "DOUBLE"),
+    ("cve_id", "VARCHAR"), ("cve_match_confidence", "DOUBLE"),
+    ("cve_cvss_score", "DOUBLE"), ("cve_severity", "VARCHAR"),
+    ("cve_advisory_url", "VARCHAR"), ("required_protocol", "VARCHAR"),
+    ("required_configuration", "VARCHAR"), ("configuration_confidence", "DOUBLE"),
+    ("vulnerability_category", "VARCHAR"), ("evidence_state", "VARCHAR"),
+    ("overall_confidence", "DOUBLE"), ("response_confidence", "DOUBLE"),
+    ("freshness_score", "DOUBLE"), ("observed_at", "TIMESTAMP"),
+    ("crawl_age_days", "BIGINT"), ("response_sha256", "VARCHAR"),
+    ("normalized_body_hash", "VARCHAR"), ("body_length", "BIGINT"),
+    ("soft_404_probability", "DOUBLE"), ("spa_fallback_probability", "DOUBLE"),
+    ("generic_waf_probability", "DOUBLE"), ("cdn_error_probability", "DOUBLE"),
+    ("generic_login_probability", "DOUBLE"), ("warc_filename", "VARCHAR"),
+    ("warc_record_offset", "BIGINT"), ("warc_record_length", "BIGINT"),
+    ("suggested_validation_tags", "VARCHAR"), ("evidence_json", "VARCHAR"),
+    ("notes", "VARCHAR"),
+)
 
 
 def http_get(url: str, timeout: int = 60) -> bytes:
@@ -46,10 +82,23 @@ def get_latest_crawl() -> str:
     raise RuntimeError("No complete Common Crawl URL Index found")
 
 
-def get_warc_parquet_paths(crawl_id: str) -> list[str]:
+def get_warc_parquet_paths(crawl_id: str, cache_path: Path | None = None) -> list[str]:
+    if cache_path:
+        try:
+            cached = json.loads(cache_path.read_text(encoding="utf-8"))
+            if isinstance(cached, list) and cached and all(isinstance(path, str) for path in cached):
+                return cached
+        except (OSError, ValueError):
+            pass
     raw = http_get(f"{DATA_BASE}crawl-data/{crawl_id}/cc-index-table.paths.gz")
-    return [DATA_BASE + line for line in gzip.decompress(raw).decode().splitlines()
-            if line.endswith(".parquet") and "subset=warc" in line]
+    paths = [DATA_BASE + line for line in gzip.decompress(raw).decode().splitlines()
+             if line.endswith(".parquet") and "subset=warc" in line]
+    if cache_path:
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = cache_path.with_suffix(cache_path.suffix + ".tmp")
+        temporary.write_text(json.dumps(paths), encoding="utf-8")
+        os.replace(temporary, cache_path)
+    return paths
 
 
 def _sql_string(value: str) -> str:
@@ -93,8 +142,13 @@ def write_parquet(connection, rows: list[dict], output: str) -> None:
 
 
 def _jsonl_to_parquet(connection, jsonl_path: str, output: str) -> None:
+    columns_sql = ", ".join(
+        f"'{_sql_string(name)}': '{_sql_string(column_type)}'"
+        for name, column_type in RESULT_SCHEMA
+    )
     connection.execute(
-        f"COPY (SELECT * FROM read_json_auto('{_sql_string(jsonl_path)}', format='newline_delimited')) "
+        f"COPY (SELECT * FROM read_json_auto('{_sql_string(jsonl_path)}', "
+        f"format='newline_delimited', columns={{{columns_sql}}})) "
         f"TO '{_sql_string(output)}' (FORMAT PARQUET, COMPRESSION ZSTD)"
     )
 
@@ -104,23 +158,49 @@ def _shard_id(path: str) -> str:
     return name.split("-", 2)[1] if name.startswith("part-") else name[:24]
 
 
+def _index_retry_delay(error: urllib.error.HTTPError, base_seconds: int, attempt: int) -> float:
+    """Use the server's retry hint when present, otherwise a bounded backoff."""
+    retry_after = error.headers.get("Retry-After") if error.headers else None
+    try:
+        if retry_after is not None:
+            return max(float(base_seconds), float(retry_after))
+    except ValueError:
+        pass
+    return min(float(base_seconds) * (2 ** min(attempt, 4)), 15 * 60.0)
+
+
 def _download_index_shard(url: str, destination: Path, limiter: BandwidthLimiter,
-                          monitor: RuntimeMonitor) -> None:
+                          monitor: RuntimeMonitor, cooldown_seconds: int = 180) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_suffix(destination.suffix + ".part")
     existing = temporary.stat().st_size if temporary.exists() else 0
     headers = {"User-Agent": "cc-scan/3.0 passive research"}
     if existing:
         headers["Range"] = f"bytes={existing}-"
-    request = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(request, timeout=60) as response:
-        append = existing > 0 and response.status == 206
-        if existing and not append:
-            existing = 0
-        with temporary.open("ab" if append else "wb") as handle:
-            copy_limited(response, handle, limiter,
-                         progress=lambda size: monitor.transfer("index_download_bytes", size))
-    os.replace(temporary, destination)
+    attempt = 0
+    while True:
+        request = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(request, timeout=60) as response:
+                append = existing > 0 and response.status == 206
+                if existing and not append:
+                    existing = 0
+                with temporary.open("ab" if append else "wb") as handle:
+                    copy_limited(response, handle, limiter,
+                                 progress=lambda size: monitor.transfer("index_download_bytes", size))
+            os.replace(temporary, destination)
+            return
+        except urllib.error.HTTPError as exc:
+            if exc.code not in (403, 429):
+                raise
+            delay = _index_retry_delay(exc, cooldown_seconds, attempt)
+            attempt += 1
+            monitor.update(phase="stage1_retry", current_shard=_shard_id(url),
+                           index_retry_http_status=exc.code, index_retry_attempt=attempt,
+                           index_retry_delay_seconds=delay)
+            monitor.log(f"[!] Stage 1: Index-Shard {_shard_id(url)} lieferte HTTP {exc.code}; "
+                        f"neuer Versuch in {delay:.0f} Sekunden (Versuch {attempt})")
+            time.sleep(delay)
 
 
 def _new_connection(args):
@@ -155,10 +235,21 @@ def _compact_result_shard(connection, parts_dir: Path, output: Path) -> None:
         parts.insert(0, output)
     if not parts:
         return
-    path_sql = ", ".join("'" + _sql_string(str(path)) + "'" for path in parts)
+    # Read each file independently before the UNION.  This also repairs parts
+    # written by older versions where null-only columns were stored as JSON;
+    # read_parquet([...], union_by_name=true) attempts the incompatible cast
+    # before an outer SELECT can normalize it.
+    cast_sql = ", ".join(
+        f'CAST("{name}" AS {column_type}) AS "{name}"'
+        for name, column_type in RESULT_SCHEMA
+    )
+    selects = [
+        f"SELECT {cast_sql} FROM read_parquet('{_sql_string(str(path))}')"
+        for path in parts
+    ]
     temporary = output.with_suffix(".tmp.parquet")
     connection.execute(
-        f"COPY (SELECT * FROM read_parquet([{path_sql}], union_by_name=true)) "
+        f"COPY ({' UNION ALL '.join(selects)}) "
         f"TO '{_sql_string(str(temporary))}' (FORMAT PARQUET, COMPRESSION ZSTD)"
     )
     os.replace(temporary, output)
@@ -182,6 +273,33 @@ def _ensure_disk_space(path: Path, minimum_gb: float) -> None:
         )
 
 
+def _remove_fresh_start_path(path: Path) -> None:
+    """Remove one explicitly scoped scan artifact, never a broad directory."""
+    resolved = path.resolve()
+    if resolved == ROOT.resolve() or not resolved.is_relative_to(ROOT.resolve()):
+        raise RuntimeError(f"Refusing to remove unsafe fresh-start path: {resolved}")
+    if path.is_dir():
+        shutil.rmtree(path)
+    else:
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            pass
+
+
+def reset_streaming_run(args, crawl: str) -> None:
+    """Delete only artifacts that can make a streaming run resume old work."""
+    targets = (
+        Path(args.runtime_dir) / crawl,
+        Path(args.output) / crawl,
+        Path(args.cache_dir),
+        Path(args.state_file),
+        Path(args.log_file),
+    )
+    for target in targets:
+        _remove_fresh_start_path(target)
+
+
 def run_streaming(args, crawl: str, selected: list[str], monitor: RuntimeMonitor,
                   limiter: BandwidthLimiter) -> None:
     """Pipeline index shards into Stage 2 while bounding disk and network use."""
@@ -196,7 +314,9 @@ def run_streaming(args, crawl: str, selected: list[str], monitor: RuntimeMonitor
     monitor.update(crawl=crawl, total_shards=len(selected), output=str(result_dir),
                    bandwidth_mbit=args.bandwidth_mbit, phase="starting")
 
-    work_queue: queue.Queue = queue.Queue(maxsize=2)
+    stage2_prefetch = max(1, int(getattr(args, "stage2_prefetch", 1)))
+    analysis_workers = max(1, int(getattr(args, "analysis_workers", 1)))
+    work_queue: queue.Queue = queue.Queue(maxsize=max(2, stage2_prefetch + 1))
     producer_error: list[BaseException] = []
     stop = threading.Event()
 
@@ -218,7 +338,11 @@ def run_streaming(args, crawl: str, selected: list[str], monitor: RuntimeMonitor
                     _ensure_disk_space(root, getattr(args, "min_free_gb", 0))
                     monitor.update(phase="stage1_download", current_shard=shard_id)
                     monitor.log(f"[*] Stage 1 [{position}/{len(selected)}]: lade Index-Shard {shard_id}")
-                    _download_index_shard(remote_path, local_index, limiter, monitor)
+                    _download_index_shard(
+                        remote_path, local_index, limiter, monitor,
+                        cooldown_seconds=getattr(args, "index_cooldown_seconds",
+                                                 getattr(args, "warc_cooldown_seconds", 180)),
+                    )
                     monitor.update(phase="stage1_scan", current_shard=shard_id)
                     candidates.parent.mkdir(parents=True, exist_ok=True)
                     temporary = candidates.with_suffix(".tmp.parquet")
@@ -255,9 +379,18 @@ def run_streaming(args, crawl: str, selected: list[str], monitor: RuntimeMonitor
     soft404 = Soft404Index(str(soft404_path), reset=not soft404_path.exists())
     fetcher = WarcFetcher(args.cache_dir, args.workers, max_record_bytes=args.max_record_bytes,
                           limiter=limiter,
-                          progress=lambda size: monitor.transfer("warc_download_bytes", size))
+                          progress=lambda size: monitor.transfer("warc_download_bytes", size),
+                          cooldown_seconds=getattr(args, "warc_cooldown_seconds", 120))
     processed = int(monitor.state.get("stats", {}).get("candidate_count", 0))
     budget_reached = False
+    analysis_pool = None
+    if analysis_workers > 1:
+        analysis_pool = ProcessPoolExecutor(
+            max_workers=analysis_workers,
+            mp_context=multiprocessing.get_context("spawn"),
+            initializer=initialize_analysis_worker,
+            initargs=(CVE_RULES,),
+        )
     try:
         while True:
             item = work_queue.get()
@@ -271,55 +404,80 @@ def run_streaming(args, crawl: str, selected: list[str], monitor: RuntimeMonitor
             monitor.update(phase="stage2", current_shard=shard_id)
             monitor.log(f"[*] Stage 2: analysiere Shard {shard_id} ab Batch {next_batch}")
             cursor = connection.execute(
-                "SELECT * FROM read_parquet(?) QUALIFY row_number() OVER (PARTITION BY "
+                "SELECT * FROM read_parquet(?) WHERE NOT (observed_signal = 'CLIENT_COMPONENT_PATH_OBSERVED' "
+                "AND NOT regexp_matches(normalized_path, "
+                "'(^|/)(jquery|pdf|angular|lodash|bootstrap|purify|ckeditor|tinymce|underscore|axios|(?:node-)?semver|ini)[^/]*\\.js$')) "
+                "QUALIFY row_number() OVER (PARTITION BY "
                 "warc_filename, warc_record_offset, warc_record_length ORDER BY endpoint_confidence DESC) = 1 "
                 f"ORDER BY endpoint_confidence DESC, fetch_time DESC NULLS LAST OFFSET {shard_processed}",
                 [str(candidates)])
             names = [column[0] for column in cursor.description]
             batch_index = next_batch
-            while True:
-                wanted = max(1, args.batch_size)
-                if args.max_candidates:
-                    remaining = args.max_candidates - processed
-                    if remaining <= 0:
-                        budget_reached = True
-                        stop.set()
-                        break
-                    wanted = min(wanted, remaining)
-                values = cursor.fetchmany(wanted)
-                if not values:
-                    break
-                rows = [dict(zip(names, row_values)) for row_values in values]
-                records = [(row["warc_filename"], int(row["warc_record_offset"]),
-                            int(row["warc_record_length"])) for row in rows]
-                _ensure_disk_space(root, getattr(args, "min_free_gb", 0))
-                prepass = index_soft404_rows(rows, fetcher, soft404,
-                                             max_body_bytes=args.max_body_bytes,
-                                             parse_workers=args.parse_workers)
-                enriched, metrics = enrich_rows(rows, fetcher,
-                                                max_body_bytes=args.max_body_bytes,
-                                                soft404_index=soft404,
-                                                parse_workers=args.parse_workers)
-                output = shard_parts / f"batch-{batch_index:06d}.parquet"
-                _write_result_batch(writer, enriched, output)
-                if not args.keep_warc_cache:
-                    fetcher.remove_many(records)
-                monitor.add_results(enriched)
-                states = {"likely_vulnerable_count": 0, "confirmed_count": 0,
-                          "cve_candidate_count": 0, "product_detection_count": 0}
-                state_keys = {"LIKELY_VULNERABLE": "likely_vulnerable_count",
-                              "CONFIRMED": "confirmed_count", "CVE_CANDIDATE": "cve_candidate_count",
-                              "PRODUCT_DETECTED": "product_detection_count"}
-                for result in enriched:
-                    key = state_keys.get(result.get("evidence_state"))
-                    if key:
-                        states[key] += 1
-                monitor.increment(**prepass, **metrics, **states)
-                monitor.update(disk_free_bytes=shutil.disk_usage(root).free)
-                processed += len(rows)
-                shard_processed += len(rows)
-                batch_index += 1
-                monitor.shard(shard_id, next_batch=batch_index, processed_rows=shard_processed)
+            scheduled = 0
+            input_exhausted = False
+            pending: list[tuple[int, list[dict], list[tuple[str, int, int]], object]] = []
+            # Fetching/parsing happens ahead of the serial soft-404 and output stage.
+            # Results remain consumed in order, preserving resumability and the global
+            # soft-404 index semantics across batches.
+            with ThreadPoolExecutor(max_workers=stage2_prefetch,
+                                    thread_name_prefix="stage2-prepare") as preparation_pool:
+                while pending or not input_exhausted:
+                    while not input_exhausted and len(pending) < stage2_prefetch:
+                        wanted = max(1, args.batch_size)
+                        if args.max_candidates:
+                            remaining = args.max_candidates - processed - scheduled
+                            if remaining <= 0:
+                                budget_reached = True
+                                stop.set()
+                                input_exhausted = True
+                                break
+                            wanted = min(wanted, remaining)
+                        values = cursor.fetchmany(wanted)
+                        if not values:
+                            input_exhausted = True
+                            break
+                        rows = [dict(zip(names, row_values)) for row_values in values]
+                        records = [(row["warc_filename"], int(row["warc_record_offset"]),
+                                    int(row["warc_record_length"])) for row in rows]
+                        _ensure_disk_space(root, getattr(args, "min_free_gb", 0))
+                        future = preparation_pool.submit(
+                            fetch_and_parse_rows, rows, fetcher,
+                            args.max_body_bytes, args.parse_workers,
+                        )
+                        pending.append((batch_index + len(pending), rows, records, future))
+                        scheduled += len(rows)
+                    if not pending:
+                        continue
+                    current_batch, rows, records, future = pending.pop(0)
+                    parsed, fetch_metrics = future.result()
+                    scheduled -= len(rows)
+                    prepass = index_parsed_soft404(rows, parsed, fetcher, soft404)
+                    if analysis_pool:
+                        enriched, metrics = enrich_parsed_rows_parallel(
+                            rows, parsed, soft404, analysis_pool, analysis_workers)
+                    else:
+                        enriched, metrics = enrich_parsed_rows(rows, parsed, soft404_index=soft404)
+                    metrics = {**fetch_metrics, **metrics}
+                    output = shard_parts / f"batch-{current_batch:06d}.parquet"
+                    _write_result_batch(writer, enriched, output)
+                    if not args.keep_warc_cache:
+                        fetcher.remove_many(records)
+                    monitor.add_results(enriched)
+                    states = {"likely_vulnerable_count": 0, "confirmed_count": 0,
+                              "cve_candidate_count": 0, "product_detection_count": 0}
+                    state_keys = {"LIKELY_VULNERABLE": "likely_vulnerable_count",
+                                  "CONFIRMED": "confirmed_count", "CVE_CANDIDATE": "cve_candidate_count",
+                                  "PRODUCT_DETECTED": "product_detection_count"}
+                    for result in enriched:
+                        key = state_keys.get(result.get("evidence_state"))
+                        if key:
+                            states[key] += 1
+                    monitor.increment(**prepass, **metrics, **states)
+                    monitor.update(disk_free_bytes=shutil.disk_usage(root).free)
+                    processed += len(rows)
+                    shard_processed += len(rows)
+                    batch_index = current_batch + 1
+                    monitor.shard(shard_id, next_batch=batch_index, processed_rows=shard_processed)
             if stop.is_set():
                 _compact_result_shard(writer, shard_parts, result_dir / f"part-{shard_id}.parquet")
                 break
@@ -333,7 +491,10 @@ def run_streaming(args, crawl: str, selected: list[str], monitor: RuntimeMonitor
             monitor.log(f"[+] Stage 2: Shard {shard_id} abgeschlossen")
     finally:
         stop.set()
+        if analysis_pool:
+            analysis_pool.shutdown(wait=True, cancel_futures=True)
         soft404.close()
+        fetcher.close()
         connection.close()
         writer.close()
         producer.join()
@@ -362,8 +523,16 @@ def main() -> None:
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--parse-workers", type=int, default=2)
     parser.add_argument("--batch-size", type=int, default=250)
+    parser.add_argument("--stage2-prefetch", type=int, default=1,
+                        help="Number of WARC batches to fetch/parse concurrently before ordered analysis")
+    parser.add_argument("--analysis-workers", type=int, default=1,
+                        help="Processes used for CPU-heavy fingerprint/CVE analysis")
     parser.add_argument("--max-record-bytes", type=int, default=8_000_000)
     parser.add_argument("--max-body-bytes", type=int, default=2_000_000)
+    parser.add_argument("--warc-cooldown-seconds", type=int, default=120,
+                        help="Shared cooldown after Common Crawl HTTP 403/429 responses")
+    parser.add_argument("--index-cooldown-seconds", type=int, default=180,
+                        help="Initial retry delay for Stage-1 index HTTP 403/429 responses")
     parser.add_argument("--soft404-db", default=".cache/soft404.sqlite")
     parser.add_argument("--no-global-soft404", action="store_true",
                         help="Disable the full-candidate similarity prepass")
@@ -374,6 +543,8 @@ def main() -> None:
     parser.add_argument("--cve-cache-dir", default=".cache/cve")
     parser.add_argument("--stream-shards", action="store_true",
                         help="Pipeline local, resumable index shards into Stage 2")
+    parser.add_argument("--fresh-start", action="store_true",
+                        help="Discard this crawl's streaming state/results/cache and start at shard 0")
     parser.add_argument("--bandwidth-mbit", type=float, default=0,
                         help="Shared download limit in Mbit/s; streaming mode required for Stage 1")
     parser.add_argument("--dashboard", action="store_true")
@@ -388,17 +559,40 @@ def main() -> None:
     args = parser.parse_args()
     if duckdb is None:
         sys.exit("duckdb is required: python -m pip install -r requirements.txt")
-    if args.bandwidth_mbit < 0 or args.min_free_gb < 0:
-        sys.exit("--bandwidth-mbit/--min-free-gb cannot be negative")
+    if (args.bandwidth_mbit < 0 or args.min_free_gb < 0 or args.warc_cooldown_seconds < 1 or
+            args.index_cooldown_seconds < 1 or
+            args.stage2_prefetch < 1 or args.analysis_workers < 1):
+        sys.exit("Bandwidth/free-space values cannot be negative; worker counts must be at least 1")
     if (args.dashboard or args.bandwidth_mbit) and not args.stream_shards:
         sys.exit("--dashboard/--bandwidth-mbit require --stream-shards")
     if args.stream_shards and (args.candidate_parquet or args.stage1_only):
         sys.exit("--stream-shards cannot be combined with --candidate-parquet/--stage1-only")
+    if args.fresh_start and not args.stream_shards:
+        sys.exit("--fresh-start requires --stream-shards")
+
+    crawl = None
+    paths = None
+    if args.stream_shards:
+        crawl = args.crawl or get_latest_crawl()
+        if args.fresh_start:
+            reset_streaming_run(args, crawl)
+
     monitor = RuntimeMonitor(args.state_file, args.log_file) if args.stream_shards or args.dashboard else None
     dashboard = DashboardServer(monitor, args.dashboard_host, args.dashboard_port) if args.dashboard else None
     if dashboard:
         dashboard.start()
         monitor.log(f"[+] Dashboard: http://{args.dashboard_host}:{args.dashboard_port}")
+    if args.stream_shards:
+        manifest = Path(args.runtime_dir) / "manifests" / f"{crawl}.warc-paths.json"
+        while True:
+            try:
+                paths = get_warc_parquet_paths(crawl, manifest)
+                monitor.update(manifest_error=None)
+                break
+            except OSError as exc:
+                monitor.update(phase="manifest_retry", manifest_error=str(exc))
+                monitor.log(f"[!] Common-Crawl-Manifest nicht verfuegbar: {exc}; neuer Versuch in 30 Sekunden")
+                time.sleep(30)
     if args.update_cves:
         from src import settings
         from src.cve_importer import update_file
@@ -413,8 +607,6 @@ def main() -> None:
 
     if args.stream_shards:
         try:
-            crawl = args.crawl or get_latest_crawl()
-            paths = get_warc_parquet_paths(crawl)
             selected = paths if args.full else paths[:args.num_files]
             limiter = BandwidthLimiter(args.bandwidth_mbit)
             run_streaming(args, crawl, selected, monitor, limiter)

@@ -4,8 +4,17 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 echo "=== cc-scan 300-GB streaming profile ==="
-echo "Dashboard (lokal): http://127.0.0.1:8080"
-echo "Gemeinsames Download-Limit: 20 Mbit/s"
+if ! command -v tailscale >/dev/null 2>&1; then
+  echo "[!] Tailscale wurde nicht gefunden; das Dashboard kann nicht ans Tailnet gebunden werden."
+  exit 1
+fi
+TAILNET_IP="$(tailscale ip -4 2>/dev/null | head -n 1)"
+if [ -z "$TAILNET_IP" ]; then
+  echo "[!] Tailscale ist nicht verbunden; bitte zuerst Tailscale starten."
+  exit 1
+fi
+echo "Dashboard (Tailnet): http://${TAILNET_IP}:8080"
+echo "Gemeinsames Download-Limit: 80 Mbit/s"
 echo "WARC-Records werden nach jedem analysierten Batch aus dem Cache entfernt."
 
 AVAILABLE_KIB="$(awk '/MemAvailable:/ {print $2}' /proc/meminfo)"
@@ -18,15 +27,18 @@ exec ./start.sh \
   --full \
   --stream-shards \
   --max-candidates 0 \
-  --bandwidth-mbit 20 \
+  --bandwidth-mbit 80 \
   --dashboard \
-  --dashboard-host 127.0.0.1 \
+  --dashboard-host "$TAILNET_IP" \
   --dashboard-port 8080 \
   --threads 4 \
   --memory "${MEMORY_GIB}GB" \
-  --workers 8 \
-  --parse-workers 4 \
-  --batch-size 64 \
+  --workers 12 \
+  --parse-workers 8 \
+  --batch-size 128 \
+  --stage2-prefetch 4 \
+  --analysis-workers 4 \
+  --warc-cooldown-seconds 180 \
   --runtime-dir .cache/stream \
   --cache-dir .cache/stream/warc \
   --state-file scan-status.json \

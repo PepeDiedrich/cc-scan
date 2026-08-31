@@ -80,6 +80,9 @@ class RuntimeMonitor:
         self._transfer_window_started = time.monotonic()
         self._transfer_window_bytes: dict[str, int] = {}
         if mark_running:
+            # A resumed run must not present the previous run's terminal state.
+            self.state.pop("finished_at", None)
+            self.state.pop("error", None)
             self.state.update({"running": True, "started_at": self._timestamp(), "pid": os.getpid()})
         self.state.setdefault("stats", {})
         self.state.setdefault("shards", {})
@@ -237,7 +240,7 @@ async function refresh(){try{const s=await fetch('/api/status').then(r=>r.json()
 document.querySelector('#run').textContent=s.running?'läuft':'beendet';
 let done=Object.values(s.shards||{}).filter(v=>v.stage2_done).length;
 let rate=((x.index_download_bytes_per_second||0)+(x.warc_download_bytes_per_second||0))*8/1e6;
-let cards=[['Phase',s.phase||'-'],['Shards',done+' / '+(s.total_shards||0)],['Kandidaten',fmt(x.candidate_count)],['Ergebnisse',fmt(x.result_count)],['Likely/Confirmed',fmt(x.likely_vulnerable_count)+' / '+fmt(x.confirmed_count)],['Download',rate.toFixed(2)+' Mbit/s'],['Index geladen',mb(x.index_download_bytes)],['WARC geladen',mb(x.warc_download_bytes)],['Speicher frei',mb(s.disk_free_bytes)],['Fehler',fmt(x.warc_failure_count)],['Laufzeit',((s.uptime_seconds||0)/3600).toFixed(1)+' h']];
+let cards=[['Phase',s.phase||'-'],['Shards',done+' / '+(s.total_shards||0)],['Kandidaten',fmt(x.candidate_count)],['Ergebnisse',fmt(x.result_count)],['Likely/Confirmed',fmt(x.likely_vulnerable_count)+' / '+fmt(x.confirmed_count)],['Download',rate.toFixed(2)+' Mbit/s'],['Index geladen',mb(x.index_download_bytes)],['WARC geladen',mb(x.warc_download_bytes)],['Speicher frei',mb(s.disk_free_bytes)],['Fetch/Parse-Fehler',fmt(x.warc_fetch_failure_count)+' / '+fmt(x.warc_parse_failure_count)],['HTTP 403/429',fmt(x.warc_http_403_count)+' / '+fmt(x.warc_http_429_count)],['Laufzeit',((s.uptime_seconds||0)/3600).toFixed(1)+' h']];
 document.querySelector('#cards').innerHTML=cards.map(v=>`<div class="card"><div class="muted">${esc(v[0])}</div><div class="value">${esc(v[1])}</div></div>`).join('');
 document.querySelector('#results').innerHTML=(s.recent_results||[]).map(r=>`<tr><td>${esc(r.evidence_state)}</td><td>${esc(r.host)}</td><td>${esc(r.product)}</td><td>${esc([r.detected_version,r.cve_id].filter(Boolean).join(' / '))}</td><td>${esc(r.cve_cvss_score||'')} ${esc(r.cve_severity||'')}</td><td>${esc(r.overall_confidence)}</td><td>${esc(r.url)}</td></tr>`).join('');
 const l=await fetch('/api/logs').then(r=>r.text()),e=document.querySelector('#logs');let bottom=e.scrollTop+e.clientHeight>=e.scrollHeight-20;e.textContent=l;if(bottom)e.scrollTop=e.scrollHeight;}catch(e){document.querySelector('#run').textContent='nicht erreichbar'}}

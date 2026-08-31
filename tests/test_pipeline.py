@@ -38,8 +38,7 @@ def row(path, product, query="", status=200):
 class PipelineTests(unittest.TestCase):
     def test_geoserver_path_without_version_is_not_confirmed(self):
         result = analyze_record(row("/geoserver/wms", "GeoServer"), response("<title>GeoServer</title>"))[0]
-        self.assertIn(result["evidence_state"], {"PRODUCT_DETECTED", "CVE_CANDIDATE"})
-        self.assertNotEqual(result["evidence_state"], "CONFIRMED")
+        self.assertEqual(result["evidence_state"], "PRODUCT_DETECTED")
 
     def test_geoserver_affected_version_is_likely(self):
         result = analyze_record(row("/geoserver/wms", "GeoServer"),
@@ -92,6 +91,12 @@ class PipelineTests(unittest.TestCase):
     def test_405_is_in_stage1_status_set(self):
         sql = Path("sql/01_prefilter.sql").read_text(encoding="utf-8")
         self.assertRegex(sql, r"fetch_status IN \([^)]*405")
+
+    def test_client_library_prefilter_requires_javascript_asset(self):
+        sql = Path("sql/01_prefilter.sql").read_text(encoding="utf-8")
+        self.assertIn("concrete JavaScript asset path", sql)
+        self.assertRegex(sql, r"AND NOT regexp_matches\(normalized_path")
+        self.assertIn("observed_signal <> 'CLIENT_COMPONENT_PATH_OBSERVED'", sql)
 
     def test_direct_provider_404_is_not_takeover(self):
         self.assertIsNone(assess_takeover("random-project.github.io", "github.io", [], True, False))
