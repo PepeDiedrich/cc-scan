@@ -1,5 +1,13 @@
 # cc-scan: passive Common-Crawl evidence pipeline
 
+> Portfolio project — a resource-bounded, passive research pipeline for
+> turning archived web evidence into explainable product and CVE candidates.
+> It performs no active scanning, exploitation, or account/resource takeover.
+
+**Highlights:** streaming-scale Parquet processing · bounded WARC range
+fetching · evidence-based confidence scoring · soft-404/SPA detection ·
+vendor-prioritized CVE rules · tested Python pipeline
+
 `cc-scan` erzeugt nachvollziehbare Security- und CVE-Kandidaten aus dem Common-Crawl-URL-Index und den zugehörigen archivierten HTTP-Responses. Es ist kein Exploit-Scanner. Der Standardmodus ist immer `PASSIVE_ONLY=true`; es gibt keinen Code zum Verwenden gefundener Secrets, Beanspruchen fremder Provider-Ressourcen oder aktiven Testen von Internet-Systemen.
 
 ## Architektur
